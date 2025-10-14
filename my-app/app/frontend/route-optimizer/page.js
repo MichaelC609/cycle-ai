@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import Script from 'next/script';
 
 export default function RouteOptimizer() {
   const [formData, setFormData] = useState({
@@ -12,6 +13,9 @@ export default function RouteOptimizer() {
     avoidDetours: '',
     avoidSteepHills: ''
   });
+
+  const [mapLoaded, setMapLoaded] = useState(false);
+  const [map, setMap] = useState(null);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -31,14 +35,80 @@ export default function RouteOptimizer() {
     }));
   };
 
-  const handleSubmit = (e) => {
+  // Initialize Google Maps
+  const initializeMap = async () => {
+    if (typeof window !== 'undefined' && window.google) {
+      const { Map } = await window.google.maps.importLibrary('maps');
+      
+      const mapInstance = new Map(document.getElementById('map'), {
+        zoom: 10,
+        center: { lat: 37.7749, lng: -122.4194 }, // San Francisco default
+        mapId: 'DEMO_MAP_ID'
+      });
+      
+      setMap(mapInstance);
+    }
+  };
+
+  // Handle Google Maps API load
+  const handleGoogleMapsLoad = () => {
+    setMapLoaded(true);
+    initializeMap();
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     console.log('Form submitted:', formData);
-    // Handle form submission logic here
+    
+    if (mapLoaded && map) {
+      // Use Google Maps services for route calculation
+      await calculateRoute();
+    }
   };
+
+  // Calculate route using Google Maps Directions API
+  const calculateRoute = async () => {
+    if (!window.google || !map) return;
+
+    const { DirectionsService, DirectionsRenderer } = await window.google.maps.importLibrary('routes');
+    
+    const directionsService = new DirectionsService();
+    const directionsRenderer = new DirectionsRenderer();
+    directionsRenderer.setMap(map);
+
+    const request = {
+      origin: formData.startAddress,
+      destination: formData.endAddress,
+      travelMode: window.google.maps.TravelMode.BICYCLING, // For cycling routes
+      avoidHighways: formData.routePreferences.includes('scenic'),
+      avoidTolls: true,
+    };
+
+    try {
+      const result = await directionsService.route(request);
+      directionsRenderer.setDirections(result);
+    } catch (error) {
+      console.error('Error calculating route:', error);
+      alert('Could not calculate route. Please check your addresses.');
+    }
+  };
+
+  // Set up global callback for Google Maps
+  useEffect(() => {
+    window.initMap = handleGoogleMapsLoad;
+    return () => {
+      delete window.initMap;
+    };
+  }, []);
 
   return (
     <div className="route-optimizer-container">
+      {/* Google Maps Script */}
+      <Script
+        src={`https://maps.googleapis.com/maps/api/js?key=AIzaSyD1FYxXNqtkmrxl_0O4DPKv-UHgZceVoaU&libraries=places,routes&v=weekly&callback=initMap`}
+        strategy="lazyOnload"
+      />
+      
       <h1>Plan Your Route:</h1>
       <p className="description">Enter your route preferences to get the most <br />
       optimal route<br /></p>
@@ -189,9 +259,19 @@ export default function RouteOptimizer() {
 
         {/* Submit Button */}
         <button type="submit" className="submit-button">
-          Submit
+          Calculate Route
         </button>
       </form>
+
+      {/* Map Container */}
+      <div className="map-container">
+        <div id="map" className="map"></div>
+        {!mapLoaded && (
+          <div className="map-loading">
+            Loading Map...
+          </div>
+        )}
+      </div>
 
       <style jsx>{`
         .route-optimizer-container {
@@ -297,6 +377,31 @@ export default function RouteOptimizer() {
           background-color: #005a87;
         }
 
+        .map-container {
+          margin-top: 30px;
+          border-radius: 8px;
+          overflow: hidden;
+          border: 1px solid #ddd;
+          position: relative;
+        }
+
+        .map {
+          width: 100%;
+          height: 400px;
+        }
+
+        .map-loading {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          background: rgba(255, 255, 255, 0.9);
+          padding: 20px;
+          border-radius: 4px;
+          font-weight: bold;
+          color: #333;
+        }
+
         @media (max-width: 768px) {
           .route-optimizer-container {
             padding: 15px;
@@ -306,6 +411,10 @@ export default function RouteOptimizer() {
           .radio-group {
             flex-direction: column;
             gap: 10px;
+          }
+
+          .map {
+            height: 300px;
           }
         }
       `}</style>
