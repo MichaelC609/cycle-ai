@@ -105,7 +105,7 @@ export default function RouteOptimizer() {
     <div className="route-optimizer-container">
       {/* Google Maps Script */}
       <Script
-        src={`https://maps.googleapis.com/maps/api/js?key=AIzaSyD1FYxXNqtkmrxl_0O4DPKv-UHgZceVoaU&libraries=places,routes&v=weekly&callback=initMap`}
+        src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places,routes&v=weekly&callback=initMap`}
         strategy="lazyOnload"
       />
       
