@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Script from 'next/script';
+import PageLayout from '../../components/PageLayout';
 
 export default function RouteOptimizer() {
   const [formData, setFormData] = useState({
@@ -102,16 +103,17 @@ export default function RouteOptimizer() {
   }, []);
 
   return (
-    <div className="route-optimizer-container">
-      {/* Google Maps Script */}
-      <Script
-        src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places,routes&v=weekly&callback=initMap`}
-        strategy="lazyOnload"
-      />
-      
-      <h1>Plan Your Route:</h1>
-      <p className="description">Enter your route preferences to get the most <br />
-      optimal route<br /></p>
+    <PageLayout>
+      <div className="route-optimizer-container">
+        {/* Google Maps Script */}
+        <Script
+          src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places,routes&v=weekly&callback=initMap`}
+          strategy="lazyOnload"
+        />
+        
+        <h1>Plan Your Route:</h1>
+        <p className="description">Enter your route preferences to get the most <br />
+        optimal route<br /></p>
       
       <form onSubmit={handleSubmit} className="route-form">
         {/* Location Inputs */}
@@ -418,6 +420,7 @@ export default function RouteOptimizer() {
           }
         }
       `}</style>
-    </div>
+      </div>
+    </PageLayout>
   );
 }
