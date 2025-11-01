@@ -3,6 +3,33 @@
 import { useState, useEffect } from 'react';
 import Script from 'next/script';
 import PageLayout from '../../components/PageLayout';
+import pool from '@/utils/postgres';
+
+const fetchDataFromDB = async() => {
+  try{
+    const client = await pool.connect();
+    console.log("Database is connected");
+
+    const result = await client.query("SELECT * FROM routes");
+    const data = result.rows;
+    console.log("Fetched data", data);
+
+    client.release();
+    return data;
+
+  } catch(error){
+      console.log("Error fetching data: ", error)
+      throw error;
+  }
+};
+
+fetchDataFromDB()
+  .then(data => {
+    console.log("Received Data: ", data);
+  })
+  .catch(error => {
+    console.log("Error fetching data: ", error);
+  })
 
 export default function RouteOptimizer() {
   const [formData, setFormData] = useState({
