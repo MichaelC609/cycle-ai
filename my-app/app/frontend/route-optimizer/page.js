@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import Script from 'next/script';
 import PageLayout from '../../components/PageLayout';
-import pool from '@/utils/postgres';
 
 const fetchDataFromDB = async() => {
   try{
