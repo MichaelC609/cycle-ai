@@ -4,32 +4,6 @@ import { useState, useEffect } from 'react';
 import Script from 'next/script';
 import PageLayout from '../../components/PageLayout';
 
-const fetchDataFromDB = async() => {
-  try{
-    const client = await pool.connect();
-    console.log("Database is connected");
-
-    const result = await client.query("SELECT * FROM routes");
-    const data = result.rows;
-    console.log("Fetched data", data);
-
-    client.release();
-    return data;
-
-  } catch(error){
-      console.log("Error fetching data: ", error)
-      throw error;
-  }
-};
-
-fetchDataFromDB()
-  .then(data => {
-    console.log("Received Data: ", data);
-  })
-  .catch(error => {
-    console.log("Error fetching data: ", error);
-  })
-
 export default function RouteOptimizer() {
   const [formData, setFormData] = useState({
     startAddress: '',
@@ -44,32 +18,35 @@ export default function RouteOptimizer() {
   const [mapLoaded, setMapLoaded] = useState(false);
   const [map, setMap] = useState(null);
 
+  // Handle all text / radio inputs safely
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: value        // ensures ONLY string values are stored
     }));
   };
 
   const handleCheckboxChange = (e, category) => {
     const { value, checked } = e.target;
+
     setFormData(prev => ({
       ...prev,
-      [category]: checked 
+      [category]: checked
         ? [...prev[category], value]
         : prev[category].filter(item => item !== value)
     }));
   };
 
-  // Initialize Google Maps
+  // Google Maps setup
   const initializeMap = async () => {
     if (typeof window !== 'undefined' && window.google) {
       const { Map } = await window.google.maps.importLibrary('maps');
       
       const mapInstance = new Map(document.getElementById('map'), {
         zoom: 10,
-        center: { lat: 37.7749, lng: -122.4194 }, // San Francisco default
+        center: { lat: 37.7749, lng: -122.4194 },
         mapId: 'DEMO_MAP_ID'
       });
       
@@ -77,28 +54,70 @@ export default function RouteOptimizer() {
     }
   };
 
-  // Handle Google Maps API load
   const handleGoogleMapsLoad = () => {
     setMapLoaded(true);
     initializeMap();
   };
 
+  // ✅ FIXED: This is where the circular JSON was happening
+  // You were referencing undefined variables: startAddress, endAddress
+  // You now correctly reference formData.
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Form submitted:', formData);
-    
-    if (mapLoaded && map) {
-      // Use Google Maps services for route calculation
-      await calculateRoute();
+
+    // Validate form data
+    if (!formData.startAddress || !formData.endAddress) {
+      alert("Please enter both start and end addresses");
+      return;
+    }
+
+    // 🎉 CLEAN ROUTE DATA FOR BACKEND
+    const routeData = {
+      start_location: formData.startAddress,
+      end_location: formData.endAddress,
+    };
+
+    console.log("Submitting routeData:", routeData);
+
+    try {
+      const response = await fetch("http://localhost:8000/api/routes/add/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        // ❗ FIXED: no circular structures anymore
+        body: JSON.stringify(routeData),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log("Route saved:", data);
+        alert("Route saved successfully!");
+        
+        // Clear form after successful submission
+        setFormData({
+          ...formData,
+          startAddress: '',
+          endAddress: ''
+        });
+      } else {
+        const errorText = await response.text();
+        console.error("Error saving route:", errorText);
+        alert(`Error saving route: ${response.status} ${response.statusText}`);
+      }
+    } catch (error) {
+      console.error("Network error:", error);
+      alert("Network error: Could not connect to the server. Make sure the backend is running on http://localhost:8000");
     }
   };
 
-  // Calculate route using Google Maps Directions API
+  // Calculate route on map
   const calculateRoute = async () => {
     if (!window.google || !map) return;
 
-    const { DirectionsService, DirectionsRenderer } = await window.google.maps.importLibrary('routes');
-    
+    const { DirectionsService, DirectionsRenderer } = 
+      await window.google.maps.importLibrary('routes');
+
     const directionsService = new DirectionsService();
     const directionsRenderer = new DirectionsRenderer();
     directionsRenderer.setMap(map);
@@ -106,7 +125,7 @@ export default function RouteOptimizer() {
     const request = {
       origin: formData.startAddress,
       destination: formData.endAddress,
-      travelMode: window.google.maps.TravelMode.BICYCLING, // For cycling routes
+      travelMode: window.google.maps.TravelMode.BICYCLING,
       avoidHighways: formData.routePreferences.includes('scenic'),
       avoidTolls: true,
     };
@@ -116,336 +135,67 @@ export default function RouteOptimizer() {
       directionsRenderer.setDirections(result);
     } catch (error) {
       console.error('Error calculating route:', error);
-      alert('Could not calculate route. Please check your addresses.');
+      alert('Could not calculate route. Check your addresses.');
     }
   };
 
-  // Set up global callback for Google Maps
   useEffect(() => {
     window.initMap = handleGoogleMapsLoad;
-    return () => {
-      delete window.initMap;
-    };
+    return () => delete window.initMap;
   }, []);
 
   return (
     <PageLayout>
+
+      <Script
+        src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places,routes&v=weekly&callback=initMap`}
+        strategy="lazyOnload"
+      />
+
       <div className="route-optimizer-container">
-        {/* Google Maps Script */}
-        <Script
-          src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places,routes&v=weekly&callback=initMap`}
-          strategy="lazyOnload"
-        />
-        
         <h1>Plan Your Route:</h1>
-        <p className="description">Enter your route preferences to get the most <br />
-        optimal route<br /></p>
-      
-      <form onSubmit={handleSubmit} className="route-form">
-        {/* Location Inputs */}
-        <div className="locations-section">
-          <h2>Enter Locations:</h2>
-          
-          <div className="input-group">
-            <label htmlFor="startAddress">Start Address:</label>
-            <input
-              type="text"
-              id="startAddress"
-              name="startAddress"
-              value={formData.startAddress}
-              onChange={handleInputChange}
-              className="address-input"
-            />
+
+        {/* FORM */}
+        <form onSubmit={handleSubmit} className="route-form">
+
+          <div className="locations-section">
+            <h2>Enter Locations:</h2>
+
+            <div className="input-group">
+              <label htmlFor="startAddress">Start Address:</label>
+              <input
+                type="text"
+                id="startAddress"
+                name="startAddress"
+                value={formData.startAddress}
+                onChange={handleInputChange}
+                className="address-input"
+              />
+            </div>
+
+            <div className="input-group">
+              <label htmlFor="endAddress">End Address:</label>
+              <input
+                type="text"
+                id="endAddress"
+                name="endAddress"
+                value={formData.endAddress}
+                onChange={handleInputChange}
+                className="address-input"
+              />
+            </div>
           </div>
 
-          <div className="input-group">
-            <label htmlFor="endAddress">End Address:</label>
-            <input
-              type="text"
-              id="endAddress"
-              name="endAddress"
-              value={formData.endAddress}
-              onChange={handleInputChange}
-              className="address-input"
-            />
-          </div>
+          <button type="submit" className="submit-button">
+            Save Route
+          </button>
+        </form>
+
+        {/* Map */}
+        <div className="map-container">
+          <div id="map" className="map"></div>
+          {!mapLoaded && <div className="map-loading">Loading Map...</div>}
         </div>
-
-        {/* Preferences Section */}
-        <div className="preferences-section">
-          <h2>Enter Preferences:</h2>
-          
-          {/* Route Preferences */}
-          <div className="preference-group">
-            <label>Route Preferences:</label>
-            <div className="checkbox-group">
-              {['Safest', 'Fastest', 'Balanced', 'Scenic'].map((option) => (
-                <label key={option} className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    value={option.toLowerCase()}
-                    onChange={(e) => handleCheckboxChange(e, 'routePreferences')}
-                  />
-                  {option}
-                </label>
-              ))}
-            </div>
-          </div>
-
-          {/* Avoid Traffic */}
-          <div className="preference-group">
-            <label>Avoid Traffic:</label>
-            <div className="radio-group">
-              <label className="radio-label">
-                <input
-                  type="radio"
-                  name="avoidTraffic"
-                  value="yes"
-                  onChange={handleInputChange}
-                />
-                Yes
-              </label>
-              <label className="radio-label">
-                <input
-                  type="radio"
-                  name="avoidTraffic"
-                  value="no"
-                  onChange={handleInputChange}
-                />
-                No
-              </label>
-            </div>
-          </div>
-
-          {/* Road Types */}
-          <div className="preference-group">
-            <label>Road Types:</label>
-            <div className="checkbox-group">
-              {['Paved', 'Gravel', 'Dirt'].map((option) => (
-                <label key={option} className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    value={option.toLowerCase()}
-                    onChange={(e) => handleCheckboxChange(e, 'roadTypes')}
-                  />
-                  {option}
-                </label>
-              ))}
-            </div>
-          </div>
-
-          {/* Avoid Detours */}
-          <div className="preference-group">
-            <label>Avoid Detours:</label>
-            <div className="radio-group">
-              <label className="radio-label">
-                <input
-                  type="radio"
-                  name="avoidDetours"
-                  value="yes"
-                  onChange={handleInputChange}
-                />
-                Yes
-              </label>
-              <label className="radio-label">
-                <input
-                  type="radio"
-                  name="avoidDetours"
-                  value="no"
-                  onChange={handleInputChange}
-                />
-                No
-              </label>
-            </div>
-          </div>
-
-          {/* Avoid Steep Hills */}
-          <div className="preference-group">
-            <label>Avoid Steep Hills:</label>
-            <div className="radio-group">
-              <label className="radio-label">
-                <input
-                  type="radio"
-                  name="avoidSteepHills"
-                  value="yes"
-                  onChange={handleInputChange}
-                />
-                Yes
-              </label>
-              <label className="radio-label">
-                <input
-                  type="radio"
-                  name="avoidSteepHills"
-                  value="no"
-                  onChange={handleInputChange}
-                />
-                No
-              </label>
-            </div>
-          </div>
-        </div>
-
-        {/* Submit Button */}
-        <button type="submit" className="submit-button">
-          Calculate Route
-        </button>
-      </form>
-
-      {/* Map Container */}
-      <div className="map-container">
-        <div id="map" className="map"></div>
-        {!mapLoaded && (
-          <div className="map-loading">
-            Loading Map...
-          </div>
-        )}
-      </div>
-
-      <style jsx>{`
-        .route-optimizer-container {
-          max-width: 600px;
-          margin: 0 auto;
-          padding: 20px;
-          font-family: Arial, sans-serif;
-        }
-
-        h1 {
-          font-size: 24px;
-          margin-bottom: 10px;
-          color: #333;
-        }
-
-        .description {
-          margin-bottom: 20px;
-          color: #666;
-          font-style: italic;
-        }
-
-        .route-form {
-          background: #f9f9f9;
-          padding: 20px;
-          border-radius: 8px;
-          border: 1px solid #ddd;
-        }
-
-        .locations-section,
-        .preferences-section {
-          margin-bottom: 25px;
-        }
-
-        h2 {
-          font-size: 18px;
-          margin-bottom: 15px;
-          color: #333;
-        }
-
-        .input-group {
-          margin-bottom: 15px;
-        }
-
-        .input-group label {
-          display: block;
-          margin-bottom: 5px;
-          font-weight: bold;
-          color: #555;
-        }
-
-        .address-input {
-          width: 100%;
-          padding: 8px 12px;
-          border: 1px solid #ccc;
-          border-radius: 4px;
-          font-size: 14px;
-          box-sizing: border-box;
-        }
-
-        .preference-group {
-          margin-bottom: 20px;
-        }
-
-        .preference-group > label {
-          display: block;
-          margin-bottom: 8px;
-          font-weight: bold;
-          color: #555;
-        }
-
-        .checkbox-group,
-        .radio-group {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 15px;
-        }
-
-        .checkbox-label,
-        .radio-label {
-          display: flex;
-          align-items: center;
-          font-weight: normal;
-          cursor: pointer;
-        }
-
-        .checkbox-label input,
-        .radio-label input {
-          margin-right: 8px;
-        }
-
-        .submit-button {
-          background-color: #007cba;
-          color: white;
-          padding: 12px 24px;
-          border: none;
-          border-radius: 4px;
-          font-size: 16px;
-          cursor: pointer;
-          transition: background-color 0.3s;
-        }
-
-        .submit-button:hover {
-          background-color: #005a87;
-        }
-
-        .map-container {
-          margin-top: 30px;
-          border-radius: 8px;
-          overflow: hidden;
-          border: 1px solid #ddd;
-          position: relative;
-        }
-
-        .map {
-          width: 100%;
-          height: 400px;
-        }
-
-        .map-loading {
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          background: rgba(255, 255, 255, 0.9);
-          padding: 20px;
-          border-radius: 4px;
-          font-weight: bold;
-          color: #333;
-        }
-
-        @media (max-width: 768px) {
-          .route-optimizer-container {
-            padding: 15px;
-          }
-          
-          .checkbox-group,
-          .radio-group {
-            flex-direction: column;
-            gap: 10px;
-          }
-
-          .map {
-            height: 300px;
-          }
-        }
-      `}</style>
       </div>
     </PageLayout>
   );

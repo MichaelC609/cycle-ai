@@ -19,6 +19,6 @@ from . import views
 from .views import RouteView
 
 urlpatterns = [
-    path('', RouteView.as_view(), name="route-list"),  # Root path for this app
-    path('add/', RouteView.as_view(), name="add-route")
+    path('', RouteView.as_view(), name="route-list"),  # GET /api/routes/
+    path('add/', RouteView.as_view(), name="add-route")  # POST /api/routes/add/
 ]
