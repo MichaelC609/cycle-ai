@@ -30,7 +30,7 @@ The route optimizer requires a valid Google Maps API key to function properly. F
 4. **Create credentials:**
    - Go to "APIs & Services" → "Credentials"
    - Click "Create Credentials" → "API Key"
-   - Copy your API key (it will look like: `AIzaSyD49yfsNfVTb3T4nB1jmTM1pFK4WnM4198`)
+   - Copy your API key (it will look like: `<API Key>`)
 
 ### Step 2: Configure the API Key
 
