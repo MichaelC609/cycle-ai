@@ -1,0 +1,132 @@
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.title {
+  font-size: 2.5rem;
+  font-weight: bold;
+  text-align: center;
+  margin-bottom: 2rem;
+  color: #333;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.description {
+  font-size: 1.2rem;
+  text-align: center;
+  color: #666;
+  margin-bottom: 1rem;
+}
+
+.featureBox {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 1.5rem;
+  border-left: 4px solid #007bff;
+}
+
+.featureBox h2 {
+  margin-top: 0;
+  color: #333;
+  margin-bottom: 1rem;
+}
+
+.featureBox ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.featureBox li {
+  padding: 0.5rem 0;
+  font-size: 1.1rem;
+}
+
+.apiInfo {
+  background: #e9ecef;
+  border-radius: 8px;
+  padding: 1.5rem;
+  font-family: 'Courier New', monospace;
+}
+
+.apiInfo h3 {
+  margin-top: 0;
+  color: #333;
+}
+
+.apiInfo code {
+  background: #fff;
+  padding: 0.5rem;
+  border-radius: 4px;
+  display: inline-block;
+  margin: 0.25rem 0;
+  border: 1px solid #ddd;
+}
+
+/* Setup message styles (for when API key is not configured) */
+.setupMessage {
+  text-align: center;
+  padding: 2rem;
+}
+
+.setupInstructions {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 2rem;
+  margin: 1rem 0;
+  text-align: left;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.setupLink {
+  color: #007bff;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.setupLink:hover {
+  text-decoration: underline;
+}
+
+.codeBlock {
+  background: #2d3748;
+  color: #e2e8f0;
+  padding: 1rem;
+  border-radius: 4px;
+  margin: 0.5rem 0;
+  font-family: 'Courier New', monospace;
+  font-size: 0.9rem;
+  overflow-x: auto;
+}
+
+.note {
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: 4px;
+  padding: 1rem;
+  margin-top: 1rem;
+  color: #856404;
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 1rem;
+  }
+  
+  .title {
+    font-size: 2rem;
+  }
+  
+  .setupInstructions {
+    padding: 1rem;
+  }
+}
