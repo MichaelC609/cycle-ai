@@ -26,6 +26,9 @@ SECRET_KEY = config('DJANGO_SECRET_KEY', default='django-insecure-your-secret-ke
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DJANGO_DEBUG', default=True, cast=bool)
 
+#Google Maps API Key
+GOOGLE_MAPS_API_KEY = config('GOOGLE_MAPS_API_KEY', default='')
+
 ALLOWED_HOSTS = []
 
 

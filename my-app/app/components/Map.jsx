@@ -2,11 +2,14 @@
 
 import { useState, useRef } from "react";
 import { GoogleMap, Polyline } from "@react-google-maps/api";
+import RouteWeatherDisplay from "./RouteWeatherDisplay";
 
 const containerStyle = {
   width: "100%",
   height: "600px",
 };
+
+
 
 const defaultCenter = { lat: 34.0522, lng: -118.2437 }; // LA default
 
@@ -15,12 +18,20 @@ export default function Map() {
   const [end, setEnd] = useState("");
   const [routes, setRoutes] = useState([]);
   const [selectedRoute, setSelectedRoute] = useState(0);
+  const [routeDetails, setRouteDetails] = useState([]);
+  const [cities, setCities] = useState([]);
+
+  //state for route preferences and filtering
+  const [preferences, setPreferences] = useState({
+    avoidHighways: false, 
+    preferBikeLanes: true,
+    avoidHills: false,
+    routeType: 'balanced'
+  });
 
   const mapRef = useRef(null);
 
-  /* -----------------------------------------------------
-     🔍 NEW PLACES API — Convert text → {latitude, longitude}
-  --------------------------------------------------------*/
+//NEW PLACES API — Convert text → {latitude, longitude}
   async function geocodePlaceText(query) {
     try {
       const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
@@ -85,9 +96,7 @@ export default function Map() {
   }
 
 
-  /* -----------------------------------------------------
-     🚴 NEW ROUTES API v2 — Get multiple biking routes
-  --------------------------------------------------------*/
+
   async function requestBikeRoutes(origin, destination) {
     try {
       const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
@@ -104,6 +113,7 @@ export default function Map() {
         destination: { location: { latLng: destination } },
         travelMode: "BICYCLE",
         computeAlternativeRoutes: true,
+        routingPreference: preferences.avoidHills ? "ROUTING_PREFERENCE_LESS_HILLY" : undefined,
         polylineQuality: "HIGH_QUALITY",
         polylineEncoding: "ENCODED_POLYLINE",
       };
@@ -138,7 +148,7 @@ export default function Map() {
   }
 
   /* -----------------------------------------------------
-     ➰ Decode encoded polyline → lat/lng path
+  Decode encoded polyline → lat/lng path
   --------------------------------------------------------*/
   function decodePolyline(encoded) {
     const points = google.maps.geometry.encoding.decodePath(encoded);
@@ -146,7 +156,7 @@ export default function Map() {
   }
 
   /* -----------------------------------------------------
-     🧭 Form submission handler
+  Form submission handler
   --------------------------------------------------------*/
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -181,6 +191,17 @@ export default function Map() {
       return;
     }
 
+          //Update route fetching to capture details
+    const routeDetails = apiRoutes.map((route, index) => ({
+      index,
+      distance: (route.distanceMeters / 1000).toFixed(2),
+      duration: Math.round(route.duration.replace('s', '') / 60),
+      distanceMeters: route.distanceMeters,
+      durationSeconds: parseInt(route.duration.replace('s', ''))
+    }));
+
+      setRouteDetails(routeDetails);
+
     // 3. Decode polyline for each route
     const decoded = apiRoutes.map((route) =>
       decodePolyline(route.polyline.encodedPolyline)
@@ -197,11 +218,78 @@ export default function Map() {
       decoded[0].forEach((pt) => bounds.extend(pt));
       mapRef.current.fitBounds(bounds);
     }
+
+     //send encoded polyline and route data
+  const selectedRouteData = apiRoutes[selectedRoute]
+  const encodedPolyline = selectedRouteData.polyline.encodedPolyline;
+
+  //save data to backend
+  const routeData = {
+    start_location: start,
+    end_location: end,
+    polyline: encodedPolyline //sends encoded polyline
+  }
+
+  //POST request to Django API
+  try {
+    const response = await fetch('http://localhost:8000/api/routes/', {
+      method: 'POST', 
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(routeData)
+    });
+
+    // Get the created route with cities
+    if (response.ok) {
+      const savedRoute = await response.json();
+      console.log("Saved route response:", savedRoute);
+      if (savedRoute.route && savedRoute.route.cities) {
+        console.log("Cities extracted:", savedRoute.route.cities);
+        setCities(savedRoute.route.cities);
+      } else {
+        console.log("No cities found in response");
+      }
+    } else {
+      const errorData = await response.json();
+      console.error("Failed to save route:", response.status, errorData);
+    }
+  } catch (error) {
+    console.error("Error saving route:", error);
+  }
   };
 
   return (
     <div className="space-y-4">
-      {/* -------------------- FORM -------------------- */}
+      <div className="bg-white p-4 rounded-md shadow-sm space-y-3">
+        <h3 className="font-semibold text-lg">Route Preferences</h3>
+
+        <div className="flex-items-center gap-2">
+          <input 
+            type="checkbox"
+            id="preferBikeLanes"
+            checked={preferences.preferBikeLanes}
+            onChange={(e) => setPreferences({...preferences, preferBikeLanes: e.target.checked})}
+          />
+          <label htmlFor="preferBikeLanes">Prefer bike lanes</label>
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <label htmlFor="routeType">Route Type: </label>
+          <select
+            id="routeType"
+            value={preferences.routeType}
+            onChange={(e) => setPreferences({...preferences, routeType: e.target.value})}
+            className="border p-2 rounded"
+          >
+              <option value="fastest">Fastest</option>
+              <option value="balanced">Balanced</option>
+              <option value="scenic">Scenic</option>
+          </select>
+        </div>
+
+        
+      </div>
       <form
         onSubmit={handleSubmit}
         className="flex items-center gap-2 bg-gray-100 p-3 rounded-md"
@@ -243,7 +331,7 @@ export default function Map() {
             key={index}
             path={path}
             options={{
-              strokeColor: index === selectedRoute ? "#000000" : "#888888",
+              strokeColor: index === selectedRoute ? "#2412e8ff" : "#f60b0bff",
               strokeOpacity: index === selectedRoute ? 1.0 : 0.6,
               strokeWeight: index === selectedRoute ? 6 : 4,
               clickable: true,
@@ -252,6 +340,57 @@ export default function Map() {
           />
         ))}
       </GoogleMap>
+
+      {/* Route Details Panel */}
+        {routes.length > 0 && (
+          <div className="bg-white p-4 rounded-md shadow-sm">
+            <h3 className="font-semibold text-lg mb-3"> Available Routes </h3>
+            <div className="space-y-2">
+              {routeDetails.map((route) => (
+                <div
+                  key={route.index}
+                  onClick={() => setSelectedRoute(route.index)}
+                  className={`p-3 border rounded cursor-pointer transition-all ${
+                    selectedRoute === route.index 
+                      ? 'border-black bg-gray-50'
+                      : 'border-gray-300 hover:border-gray-400'
+                    }`}
+                >
+                  <div className="flex justify-between items center">
+                    <div>
+                      <span className="font-semibold">Route {route.index + 1}</span>
+                      {selectedRoute === route.index && (
+                        <span className="ml-2 text-sm text-gray-600">(Selected)</span>
+                      )}
+                </div>
+                <div className="text-right">
+                  <div className="font-semibold">{route.distance} km</div>
+                  <div className="text-sm text-gray-600">{route.duration} min</div>
+                </div>
+              </div>
+            </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Cities List Component */}
+        {cities.length > 0 && (
+          <div className="bg-white p-4 rounded-md shadow-sm">
+            <h3 className="font-semibold text-lg mb-3">Cities Along Route</h3>
+            <div className="space-y-4">
+              {cities.map((city, index) => (
+                <div key={index} className="border-b pb-4 last:border-b-0">
+                  <h4 className="font-medium mb-2">{city}</h4>
+                  <RouteWeatherDisplay cityName={city} />
+                </div>
+              ))}
+            </div>
+            <div className="mt-3 text-sm text-gray-600">
+              <p>Total cities: {cities.length}</p>
+            </div>
+          </div>
+        )}
     </div>
   );
 }
