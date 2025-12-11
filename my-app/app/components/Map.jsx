@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { GoogleMap, Polyline } from "@react-google-maps/api";
 import RouteWeatherDisplay from "./RouteWeatherDisplay";
+import { useRoutes } from "../context/RouteContext";
+import SaveRoute from "./SaveRoute";
 
 const containerStyle = {
   width: "100%",
@@ -20,6 +22,9 @@ export default function Map() {
   const [selectedRoute, setSelectedRoute] = useState(0);
   const [routeDetails, setRouteDetails] = useState([]);
   const [cities, setCities] = useState([]);
+
+  const { setCurrentRoute, setFetchedRoutes } = useRoutes();
+  const [apiRoutes, setApiRoutes] = useState([]); //Store raw API response
 
   //state for route preferences and filtering
   const [preferences, setPreferences] = useState({
@@ -191,7 +196,11 @@ export default function Map() {
       return;
     }
 
-          //Update route fetching to capture details
+    // Store the raw API routes data (includes encoded polylines)
+    setApiRoutes(apiRoutes);  // ADD THIS LINE
+    setFetchedRoutes(apiRoutes);  // ADD THIS LINE - saves to Context
+
+    //Update route fetching to capture details
     const routeDetails = apiRoutes.map((route, index) => ({
       index,
       distance: (route.distanceMeters / 1000).toFixed(2),
@@ -219,45 +228,31 @@ export default function Map() {
       mapRef.current.fitBounds(bounds);
     }
 
-     //send encoded polyline and route data
-  const selectedRouteData = apiRoutes[selectedRoute]
-  const encodedPolyline = selectedRouteData.polyline.encodedPolyline;
-
-  //save data to backend
-  const routeData = {
-    start_location: start,
-    end_location: end,
-    polyline: encodedPolyline //sends encoded polyline
-  }
-
-  //POST request to Django API
-  try {
-    const response = await fetch('http://localhost:8000/api/routes/', {
-      method: 'POST', 
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(routeData)
-    });
-
-    // Get the created route with cities
-    if (response.ok) {
-      const savedRoute = await response.json();
-      console.log("Saved route response:", savedRoute);
-      if (savedRoute.route && savedRoute.route.cities) {
-        console.log("Cities extracted:", savedRoute.route.cities);
-        setCities(savedRoute.route.cities);
-      } else {
-        console.log("No cities found in response");
-      }
-    } else {
-      const errorData = await response.json();
-      console.error("Failed to save route:", response.status, errorData);
+    //update current route in context with first route's data
+    if (apiRoutes.length > 0)
+    {
+      setCurrentRoute({
+        start_location: start,
+        end_location: end,
+        polyline: apiRoutes[0].polyline.encodedPolyline,
+        selectedIndex: 0
+      });
     }
-  } catch (error) {
-    console.error("Error saving route:", error);
-  }
+
   };
+
+  //update current route when selection changes
+  useEffect(() => {
+    if (apiRoutes.length > 0 && apiRoutes[selectedRoute])
+    {
+      setCurrentRoute({
+        start_location: start, 
+        end_location: end,
+        polyline: apiRoutes[selectedRoute].polyline.encodedPolyline,
+        selectedIndex: selectedRoute
+      });
+    }
+  }, [selectedRoute, apiRoutes, start, end, setCurrentRoute]);
 
   return (
     <div className="space-y-4">

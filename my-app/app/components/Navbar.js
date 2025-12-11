@@ -15,17 +15,23 @@ export default function Navbar() {
         <ul className="nav-menu">
           <li className={pathname === '/' ? 'active' : ''}>
             <Link href="/" className="nav-link">
-              <span className="nav-icon">🏠</span>
+              <span className="nav-icon"></span>
               Home
             </Link>
           </li>
           <li className={pathname === '/frontend/route-optimizer' ? 'active' : ''}>
-            <Link href="/frontend/route-optimizer" className="nav-link">
-              <span className="nav-icon">🗺️</span>
+            <Link href='../frontend/route-optimizer' className="nav-link">
+              <span className="nav-icon"></span>
               Route Optimizer
             </Link>
+            </li>
+          <li className={pathname === '/savedRoutes' ? 'active' : ''}>
+            <Link href="/savedRoutes" className="nav-link">
+              <span className="nav-icon"></span>
+              Saved Routes
+            </Link>
           </li>
-        </ul>
+          </ul>
       </nav>
 
       <style jsx>{`
