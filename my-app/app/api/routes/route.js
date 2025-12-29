@@ -16,15 +16,20 @@ export async function POST(request)
             body: JSON.stringify(routeData)
         });
 
+        console.log("Django response received, status:", djangoResponse.status);
+
         //get Django's response
         const data = await djangoResponse.json();
+        
+        console.log("Django response status:", djangoResponse.status);
+        console.log("Django response data:", data);
 
         //check if request to django was successful
         if(!djangoResponse.ok)
         {
             console.error("Django error:", data);
             return NextResponse.json(
-                { error: 'Failed to save route', details: data}.details,
+                { error: data.message || 'Failed to save route', details: data.errors || data},
                 { status: djangoResponse.status }
             );
         }

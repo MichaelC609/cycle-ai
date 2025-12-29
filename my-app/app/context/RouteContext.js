@@ -27,6 +27,7 @@ export function RouteProvider({ children }) {
                 currentRoute,
                 setCurrentRoute,
                 savedRoutes,
+                setSavedRoutes,  // Added this line to expose setSavedRoutes
                 addSavedRoute,
                 fetchedRoutes,
                 setFetchedRoutes

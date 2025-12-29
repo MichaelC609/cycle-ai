@@ -1,11 +1,63 @@
 "use client";
 
 import { useRoutes } from "../context/RouteContext";
+import { useState, useEffect } from "react";
 
 export default function SavedRoutesList()
 {
     //access saved routes from context
-    const {savedRoutes } = useRoutes();
+    const {savedRoutes, setSavedRoutes } = useRoutes();
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    // Fetch all routes from backend when component mounts
+    useEffect(() => {
+        const fetchRoutes = async () => {
+            try {
+                setLoading(true);
+                const response = await fetch('http://localhost:8000/api/routes/');
+                
+                if (!response.ok) {
+                    throw new Error('Failed to fetch routes');
+                }
+                
+                const data = await response.json();
+                console.log('Fetched routes:', data);
+                
+                // Update the context with all routes from backend
+                if (data.routes && Array.isArray(data.routes)) {
+                    setSavedRoutes(data.routes);
+                }
+            } catch (err) {
+                console.error('Error fetching routes:', err);
+                setError(err.message);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchRoutes();
+    }, []); // Empty dependency array = run once on mount
+
+    // Show loading state
+    if (loading) {
+        return (
+            <div className="bg-white p-4 rounded-md shadow-sm">
+                <h3 className="font-semibold text-lg mb-3">Saved Routes</h3>
+                <p className="text-gray-500">Loading routes...</p>
+            </div>
+        );
+    }
+
+    // Show error state
+    if (error) {
+        return (
+            <div className="bg-white p-4 rounded-md shadow-sm">
+                <h3 className="font-semibold text-lg mb-3">Saved Routes</h3>
+                <p className="text-red-500">Error: {error}</p>
+            </div>
+        );
+    }
 
     //if no saved routes, show a message
     if (savedRoutes.length === 0)
@@ -18,7 +70,9 @@ export default function SavedRoutesList()
         );
     }
 
-    return (
+    else
+    {
+        return (
         <div className="bg-white p-4 rounded-md shadow-sm">
             <h3 className="font-semibold text-lg mb-3">Saved Routes</h3>
             <div className="space-y-3">
@@ -52,7 +106,7 @@ export default function SavedRoutesList()
                                             key={index}
                                             className="text-xs bg-gray-100 px-2 py-1 rounded"
                                         >
-                                            {city}
+                                            {city},
                                         </span>
                                     ))}
                                 </div>
@@ -67,4 +121,5 @@ export default function SavedRoutesList()
             </div>
         </div>
     )
+    }
 }
