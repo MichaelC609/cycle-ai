@@ -1,10 +1,13 @@
 from django.http import HttpResponse, JsonResponse
 from rest_framework import generics, status
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from .models import Route
 from .serializers import RouteSerializer
 from django.conf import settings
+from django.db import connection
 import requests
+import json
 
 #helper function to return a list of unique cities from an encoded polyline
 def extractCitiesFromPolyline(encodedPolyline):
@@ -130,47 +133,182 @@ def extractCityFromGeocodeResult(result):
     return None
         
 
-class RouteView(generics.ListCreateAPIView):
-    queryset = Route.objects.all()
-    serializer_class = RouteSerializer
+class RouteView(APIView):
+    """API View using raw SQL queries for route operations"""
     
     def get(self, request, *args, **kwargs):
-        """List all routes"""
-        routes = self.get_queryset()
-        serializer = self.get_serializer(routes, many=True)
-        return Response({
-            'message': 'Routes retrieved successfully',
-            'routes': serializer.data
-        })
+        """List all routes using raw SQL SELECT query"""
+        try:
+            with connection.cursor() as cursor:
+                # Execute SQL SELECT query
+                cursor.execute("""
+                    SELECT route_id, start_location, end_location, polyline, cities 
+                    FROM routes_route 
+                    ORDER BY route_id DESC
+                """)
+                
+                # Fetch all rows
+                rows = cursor.fetchall()
+                
+                # Convert rows to list of dictionaries
+                routes = []
+                for row in rows:
+                    # Parse cities JSON string to Python list
+                    cities = row[4]
+                    if isinstance(cities, str):
+                        try:
+                            cities = json.loads(cities)
+                        except json.JSONDecodeError:
+                            cities = []
+                    elif not cities:
+                        cities = []
+                    
+                    routes.append({
+                        'route_id': row[0],
+                        'start_location': row[1],
+                        'end_location': row[2],
+                        'polyline': row[3],
+                        'cities': cities
+                    })
+                
+                print(f"Retrieved {len(routes)} routes from database using SQL")
+                if routes:
+                    print(f"Sample route cities: {routes[0].get('cities')}")
+                
+                return Response({
+                    'message': 'Routes retrieved successfully',
+                    'routes': routes
+                }, status=status.HTTP_200_OK)
+                
+        except Exception as e:
+            print(f"Error fetching routes: {e}")
+            import traceback
+            traceback.print_exc()
+            return Response({
+                'message': 'Error fetching routes',
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     def post(self, request, *args, **kwargs):
-        """Create a new route and extract cities from polyline"""
-
-        #get data from request
-        data = request.data.copy()
-
-        #if polyline is provided -> extract cities
-        if 'polyline' in data and data['polyline']:
-            try:
-                cities = extractCitiesFromPolyline(data['polyline'])
-                data['cities'] = cities
-                print(f"Extracted {len(cities)} cities: {cities}")
-            except Exception as e:
-                print(f"Error extracting cities: {e}")
-                import traceback
-                traceback.print_exc()
-                data['cities'] = []
-
-        serializer = self.get_serializer(data=data)
-        if serializer.is_valid():
-            serializer.save()
+        """Create a new route using raw SQL INSERT query"""
+        try:
+            # Get data from request
+            data = request.data
+            start_location = data.get('start_location')
+            end_location = data.get('end_location')
+            polyline = data.get('polyline')
+            
+            # Validate required fields
+            if not start_location or not end_location:
+                return Response({
+                    'message': 'Invalid data',
+                    'errors': 'start_location and end_location are required'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Extract cities from polyline if provided
+            cities = []
+            if polyline:
+                try:
+                    cities = extractCitiesFromPolyline(polyline)
+                    print(f"Extracted {len(cities)} cities: {cities}")
+                except Exception as e:
+                    print(f"Error extracting cities: {e}")
+                    import traceback
+                    traceback.print_exc()
+            
+            # Convert cities list to JSON string for SQL
+            cities_json = json.dumps(cities)
+            
+            with connection.cursor() as cursor:
+                # Execute SQL INSERT query with RETURNING clause
+                cursor.execute("""
+                    INSERT INTO routes_route (start_location, end_location, polyline, cities) 
+                    VALUES (%s, %s, %s, %s) 
+                    RETURNING route_id, start_location, end_location, polyline, cities
+                """, [start_location, end_location, polyline, cities_json])
+                
+                # Fetch the inserted row
+                row = cursor.fetchone()
+                
+                # Parse cities JSON string to Python list for response
+                returned_cities = row[4]
+                if isinstance(returned_cities, str):
+                    try:
+                        returned_cities = json.loads(returned_cities)
+                    except json.JSONDecodeError:
+                        returned_cities = []
+                elif not returned_cities:
+                    returned_cities = []
+                
+                # Create response data
+                route = {
+                    'route_id': row[0],
+                    'start_location': row[1],
+                    'end_location': row[2],
+                    'polyline': row[3],
+                    'cities': returned_cities
+                }
+                
+                print(f"Route saved successfully using SQL: {route}")
+                print(f"Cities in response: {returned_cities}")
+                
+                return Response({
+                    'message': 'Route created successfully',
+                    'route': route
+                }, status=status.HTTP_201_CREATED)
+                
+        except Exception as e:
+            print(f"Error creating route: {e}")
+            import traceback
+            traceback.print_exc()
             return Response({
-                'message': 'Route created successfully',
-                'route': serializer.data
-            }, status=status.HTTP_201_CREATED)
-        
-        print(f"Serializer errors: {serializer.errors}")
-        return Response({
-            'message': 'Invalid data',
-            'errors': serializer.errors
-        }, status=status.HTTP_400_BAD_REQUEST)
+                'message': 'Error creating route',
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def delete(self, request, *args, **kwargs):
+        """Delete a route using raw SQL DELETE query"""
+        try:
+            # Get route_id from query parameters
+            route_id = request.query_params.get('route_id')
+            
+            if not route_id:
+                return Response({
+                    'message': 'Invalid request',
+                    'error': 'route_id is required'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            with connection.cursor() as cursor:
+                # First check if route exists
+                cursor.execute(
+                    "SELECT route_id FROM routes_route WHERE route_id = %s",
+                    [route_id]
+                )
+                
+                if not cursor.fetchone():
+                    return Response({
+                        'message': 'Route not found',
+                        'error': f'No route with id {route_id}'
+                    }, status=status.HTTP_404_NOT_FOUND)
+                
+                # Execute SQL DELETE query
+                cursor.execute(
+                    "DELETE FROM routes_route WHERE route_id = %s",
+                    [route_id]
+                )
+                
+                print(f"Route {route_id} deleted successfully using SQL")
+                
+                return Response({
+                    'message': 'Route deleted successfully',
+                    'route_id': int(route_id)
+                }, status=status.HTTP_200_OK)
+                
+        except Exception as e:
+            print(f"Error deleting route: {e}")
+            import traceback
+            traceback.print_exc()
+            return Response({
+                'message': 'Error deleting route',
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
