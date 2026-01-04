@@ -4,6 +4,7 @@ import { useRoutes } from "../context/RouteContext";
 import { useState, useEffect, useCallback } from "react";
 import RouteInfo from "./RouteInfo/RouteInfo.jsx";
 import "./RouteInfo/RouteInfo.css";
+import Navbar from "./Navbar/Navbar";
 
 export default function SavedRoutesList()
 {
@@ -130,15 +131,11 @@ export default function SavedRoutesList()
         const styles = {color: "blue"}
         return (
         <div>
+            <Navbar />
             <div className="flex justify-between items-center mb-3">
-                <h3 className="font-semibold text-lg">Saved Routes</h3>
-                <button 
-                    onClick={fetchRoutes}
-                    className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
-                    disabled={loading}
-                >
-                    {loading ? 'Refreshing...' : 'Refresh'}
-                </button>
+                <div className="mt-3 text-sm text-gray-600">
+                    <h3 style={styles}>Total saved routes: {savedRoutes.length}</h3>
+                </div>
             </div>
             <div className="routes-grid">
                 {savedRoutes.map((route, index) => (
@@ -151,9 +148,6 @@ export default function SavedRoutesList()
                         onDelete={() => handleDeleteRoute(route.route_id)}
                     />
                 ))}
-            </div>
-            <div className="mt-3 text-sm text-gray-600">
-                <h3 style={styles}>Total saved routes: {savedRoutes.length}</h3>
             </div>
         </div>
     );

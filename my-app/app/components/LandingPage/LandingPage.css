@@ -1,0 +1,328 @@
+.landing-container{
+    min-height: 100vh;
+    background: linear-gradient(180deg, #0a0a1f 0%, #1a1a3e 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 8rem 2rem 2rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.hero-content{
+    filter: drop-shadow(0 0 30px rgba(255, 255, 255, 0.15))
+            drop-shadow(0 0 50px rgba(255, 255, 255, 0.1));
+}
+
+.hero-title{
+    font-size: 4rem;
+    font-weight: 700;
+    color: white;
+    text-align: center;
+    margin-bottom: 1.5rem;
+    line-height: 1.2;
+}
+
+.gradient-text{
+    background: linear-gradient(90deg, #a78bfa 0%, #f97316 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.hero-subtitle{
+    font-size: 3rem;
+    color: #a0a0b0;
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.bike-container{
+    position: relative;
+    margin-top: 1rem;
+    perspective: 1200px;
+    perspective-origin: center center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.bike-3d{
+    width: 800px;
+    height: 450px;
+    transform-style: preserve-3d;
+    transform: rotateX(10deg);
+    position: relative;
+    transform-origin: center center;
+}
+
+.bike-frame{
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
+}
+
+.top-tube{
+    position: absolute;
+    width: 280px;
+    height: 12px;
+    background: linear-gradient(135deg, #a78bfa, #8b5cf6);
+    top: 35%;
+    left: 50%;
+    transform: translateX(-50%) translateZ(20px);
+    border-radius: 6px;
+    box-shadow: 0 4px 15px rgba(167, 139, 250, 0.5);
+}
+
+.down-tube{
+    position: absolute;
+    width: 340px;
+    height: 14px;
+    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+    top: 35%;
+    left: 50%;
+    transform: translateX(-50%) rotate(45deg) translateZ(15px);
+    transform-origin: left center;
+    border-radius: 7px;
+    box-shadow: 0 4px 15px rgba(139, 92, 246, 0.5);
+}
+
+.seat-tube{
+    position: absolute;
+    width: 12px;
+    height: 160px;
+    background: linear-gradient(180deg, #7c3aed, #6d28d9);
+    top: 35%;
+    left: 60%;
+    transform: translateX(-50%) translateZ(18px);
+    border-radius: 6px;
+    box-shadow: 0 4px 15px rgba(124, 58, 237, 0.5);
+}
+
+.chain-stay {
+  position: absolute;
+  width: 200px;
+  height: 10px;
+  background: linear-gradient(90deg, #6d28d9, #5b21b6);
+  top: 65%;
+  left: 55%;
+  transform: translateX(-50%) translateZ(12px);
+  border-radius: 5px;
+}
+
+.seat-stay {
+  position: absolute;
+  width: 160px;
+  height: 10px;
+  background: linear-gradient(135deg, #5b21b6, #6d28d9);
+  top: 45%;
+  right: 15%;
+  transform: rotate(-50deg) translateZ(12px);
+  transform-origin: right center;
+  border-radius: 5px;
+}
+
+.head-tube {
+  position: absolute;
+  width: 12px;
+  height: 100px;
+  background: linear-gradient(180deg, #a78bfa, #8b5cf6);
+  top: 20%;
+  left: 25%;
+  transform: rotate(20deg) translateZ(20px);
+  border-radius: 6px;
+}
+
+.wheel-assembly{
+    position: absolute;
+    width: 240px;
+    height: 240px;
+    border-radius: 50%;
+    transform-style: preserve-3d;
+}
+
+.wheel-front{
+    bottom: 15%;
+    left: 5%;
+    animation: spinWheel 3s linear infinite;
+}
+
+.wheel-back{
+    bottom: 15%;
+    right: 5%;
+    animation: spinWheel 3s linear infinite;
+}
+
+@keyframes spinWheel{
+    0%{
+        transform: rotateZ(0deg);
+    }
+
+    100%{
+        transform: rotateZ(360deg);
+    }
+}
+
+.tire{
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border: 12px solid #1a1a1a;
+    border-radius: 50%;
+    box-sizing: border-box;
+    background: conic-gradient(
+        from 0deg,
+        #2a2a2a 0deg 45deg,
+        #1a1a1a 45deg 90deg,
+        #2a2a2a 90deg 135deg,
+        #1a1a1a 135deg 180deg,
+        #2a2a2a 180deg 225deg,
+        #1a1a1a 225deg 270deg,
+        #2a2a2a 270deg 315deg,
+        #1a1a1a 315deg 360deg
+    );
+
+    box-shadow: 
+        inset 0 0 20px rgba(0, 0, 0, 0.8),
+        0 8px 25px rgba(0, 0, 0, 0.6);
+}
+
+.rim{
+    position: absolute;
+    width: 70%;
+    height: 70%;
+    top: 15%;
+    left: 15%;
+    border: 4px solid #f97316;
+    border-radius: 50%;
+    background: radial-gradient(circle, #fb923c 0%, #f97316 50%, #ea580c 100%);
+    box-shadow: 
+        0 0 20px rgba(249, 115, 22, 0.6),
+        inset 0 0 15px rgba(234, 88, 12, 0.4)
+}
+
+.spokes{
+    position: absolute;
+    width: 2px;
+    height: 50%;
+    background: linear-gradient(to bottom, 
+        rgba(248, 250, 252, 0.9),
+        rgba(249, 115, 22, 0.6)
+    );
+    top: 50%;
+    left: 50%;
+    transform-origin: top center;
+    border-radius: 1px;
+}
+
+.spoke-1 { transform: translateX(-50%) rotate(0deg); }
+.spoke-2 { transform: translateX(-50%) rotate(60deg); }
+.spoke-3 { transform: translateX(-50%) rotate(120deg); }
+.spoke-4 { transform: translateX(-50%) rotate(180deg); }
+.spoke-5 { transform: translateX(-50%) rotate(240deg); }
+.spoke-6 { transform: translateX(-50%) rotate(300deg); }
+
+.hub{
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: radial-gradient(circle, #fbbf24, #f59e0b, #d97706);
+    border-radius: 50%;
+    box-shadow: 
+        0 0 15px rgba(251, 191, 36, 0.8),
+        inset 0 2px rgba(0,0,0,0,3);
+    border: 2px solid #92400e;
+}
+
+.handlebars{
+    position: absolute;
+    width: 100px;
+    height: 12px;
+    background: linear-gradient(90deg, #64748b, #94a3b8);
+    top: 18%;
+    left: 20%;
+    transform: translateZ(30px);
+    border-radius: 6px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+}
+
+.handlebars::before{
+    content: '';
+    position: absolute;
+    width: 10px;
+    height: 70px;
+    background: linear-gradient(180deg, #94a3b8, #64748b);
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border-radius: 5px;
+}
+
+.seat{
+    position: absolute;
+    width: 70px;
+    height: 35px;
+    background: linear-gradient(135deg, #1e29db, #475569);
+    top: 20%;
+    left: 63%;
+    transform: translateZ(28px);
+    border-radius: 35px 35px 8px 8px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+}
+
+.seat::after{
+    content: '';
+    position: absolute;
+    width: 8px;
+    height: 50px;
+    background: linear-gradient(180deg, #475569, #334155);
+    bottom: -50px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-radius: 4px;
+}
+
+.pedal-assembly{
+    position: absolute;
+    bottom: 35%;
+    left: 50%;
+    transform: translateZ(5px);
+}
+
+.pedal{
+    width: 45px;
+    height: 18px;
+    background: linear-gradient(135deg, #64748b, #334155);
+    border-radius: 5px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.crank{
+    position: absolute;
+    width: 90px;
+    height: 8px;
+    background: linear-gradient(90deg, #94a3b8, #64748b);
+    top: 50%;
+    right: 100%;
+    transform: translateY(-50%);
+    border-radius: 4px;
+}
+
+.bike-3d::after{
+    content: '';
+    position: absolute;
+    width: 500px;
+    height: 60px;
+    background: radial-gradient(ellipse, rgba(0,0,0,0.4), transparent);
+    bottom: -80px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-radius: 50%;
+    filter: blur(20px);
+    z-index: -1;
+}

@@ -7,7 +7,7 @@ import { useRoutes } from "../context/RouteContext";
 import SaveRoute from "./SaveRoute";
 
 const containerStyle = {
-  width: "100%",
+  width: "900px",
   height: "600px",
 };
 
@@ -255,7 +255,7 @@ export default function Map() {
   }, [selectedRoute, apiRoutes, start, end, setCurrentRoute]);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" style={{ marginTop: '6rem', maxWidth: '900px', marginLeft: '2rem', marginRight: '2rem' }}>
       <div className="bg-white p-4 rounded-md shadow-sm space-y-3">
         <h3 className="font-semibold text-lg">Route Preferences</h3>
 

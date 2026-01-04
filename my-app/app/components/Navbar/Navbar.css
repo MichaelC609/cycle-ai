@@ -1,0 +1,109 @@
+@import url('https://fonts.googleapis.com/css?family=Montserrat:500');
+
+body{
+    margin-top: 0;
+    margin-left: 0;
+    margin-right: 0;
+}
+
+.container{
+    box-sizing: border-box;
+    padding: 0;
+    background-color: rgb(7, 5, 28);
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+
+h1{
+    color: white;
+    cursor: pointer;
+    margin: 0;
+    line-height: 1;
+}
+
+li, h3{
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 500;
+    font-size: 15px;
+    color: white;
+    text-decoration: none;
+}
+
+header{
+    display: flex;
+    align-items: center;
+    padding: 20px 0.5in;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    box-sizing: border-box;
+    z-index: 100;
+    background: rgb(0, 0, 0);
+    backdrop-filter: blur(10px);
+}
+
+.nav-link{
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.nav-link li{
+    display: inline-block;
+    padding: 0px 20px;
+}
+
+.nav-link li h2{
+    transition: all 0.3s ease 0s;
+    color: white;
+    margin: 0;
+    line-height: 1;
+}
+
+.nav-link li h2:hover{
+    color: yellow;
+    text-shadow: 0 0 15px #fff
+}
+
+.buttons{
+    display: flex;
+    align-items: center;
+    margin-left: auto;
+    z-index: 10;
+}
+
+.login-btn{
+    margin: 0 5px;
+    padding: 10px 20px;
+    border-radius: 20px;
+    border: 3px solid black;
+    cursor: pointer;
+}
+
+.signup-btn{
+    margin: 0 5px;
+    padding: 10px 20px;
+    border-radius: 20px;
+    border: 3px solid black;
+    cursor: pointer;
+}
+
+.login-btn:hover{
+    background-color: yellow;
+    box-shadow: 0 0 15px #fff
+}
+
+.signup-btn:hover{
+    background-color: blue;
+    box-shadow: 0 0 15px #fff;
+    color: white;
+}
