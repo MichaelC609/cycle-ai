@@ -43,7 +43,7 @@ Complete step-by-step instructions for deploying Cycle AI to production.
    - **Root Directory**: `my-app/backend/backend`
    - **Environment**: `Python 3`
    - **Build Command**: `pip install -r requirements.txt && python manage.py collectstatic --noinput`
-   - **Start Command**: `gunicorn routes.wsgi:application`
+   - **Start Command**: ``
    - **Plan**: Free tier
 
 ### Step 3: Add Environment Variables
