@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
 // GET - Fetch all routes via Django backend
 export async function GET(request)
 {
@@ -7,7 +9,7 @@ export async function GET(request)
         console.log("Fetching routes from Django backend...");
         
         // Forward request to Django backend
-        const djangoResponse = await fetch('http://localhost:8000/api/routes/', {
+        const djangoResponse = await fetch(`${BACKEND_URL}/api/routes/`, {
             method: "GET",
             headers: {
                 'Content-Type': 'application/json',
@@ -45,7 +47,7 @@ export async function POST(request)
         console.log("Received route data:", routeData);
 
         // Forward request to Django backend
-        const djangoResponse = await fetch('http://localhost:8000/api/routes/', {
+        const djangoResponse = await fetch(`${BACKEND_URL}/api/routes/`, {
             method: "POST",
             headers: {
                 'Content-Type': 'application/json',
@@ -101,7 +103,7 @@ export async function DELETE(request)
         console.log(`Deleting route ${route_id} via Django backend...`);
         
         // Forward delete request to Django backend
-        const djangoResponse = await fetch(`http://localhost:8000/api/routes/?route_id=${route_id}`, {
+        const djangoResponse = await fetch(`${BACKEND_URL}/api/routes/?route_id=${route_id}`, {
             method: "DELETE",
             headers: {
                 'Content-Type': 'application/json',
