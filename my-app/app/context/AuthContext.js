@@ -5,98 +5,86 @@ import { jwtDecode } from 'jwt-decode';
 
 const AuthContext = createContext({});
 
+// Use environment variable for backend URL
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
 export const AuthProvider = ({ children }) => {
-    const [user, setUser] = useState(null);
-    const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-    //Check for existing auth token on mount
-    useEffect(() => {
-        const token = localStorage.getItem('access_token');
-
-        if(token)
-        {
-            try{
-                const decoded = jwtDecode(token);
-
-                //Check if token is expired
-                if(decoded.exp * 1000 > Date.now())
-                {
-                    setUser(decoded)
-                }
-
-                    //Token expired, clear it
-                    else
-                    {
-                        localStorage.removeItem('access_token');
-                        localStorage.removeItem('refresh_token');
-                    }
-            } catch(error) {
-                console.error('Invalid token: ', error);
-            }
+  useEffect(() => {
+    const token = localStorage.getItem('access_token');
+    if (token) {
+      try {
+        const decoded = jwtDecode(token);
+        if (decoded.exp * 1000 > Date.now()) {
+          setUser(decoded);
+        } else {
+          localStorage.removeItem('access_token');
+          localStorage.removeItem('refresh_token');
         }
-        setLoading(false);
-    }, []);
+      } catch (error) {
+        console.error('Invalid token:', error);
+      }
+    }
+    setLoading(false);
+  }, []);
 
-    const login = async(credential) => {
-        //send google credential to backend
-        try{
-            const response = await fetch('http://localhost:8000/api/routes/auth/google/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({credential}),
-            });
+  const login = async (credential) => {
+    try {
+      console.log('Sending credential to backend...');
+      
+      const response = await fetch(`${API_URL}/api/routes/auth/google/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ credential }),
+      });
 
-            if(!response.ok)
-            {
-                throw new Error('Authentication failed');
-            }
+      console.log('Response status:', response.status);
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Backend error:', errorData);
+        throw new Error(errorData.error || `Authentication failed (${response.status})`);
+      }
 
-            const data = await response.json();
+      const data = await response.json();
+      console.log('Received from backend:', data);
+      
+      localStorage.setItem('access_token', data.access);
+      localStorage.setItem('refresh_token', data.refresh);
+      
+      setUser(data.user);
+      
+      return data;
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
+    }
+  };
 
-            //Store tokens in localStorage
-            localStorage.setItem('access_token', data.access);
-            localStorage.setItem('refresh_token', data.refresh);
+  const logout = () => {
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    setUser(null);
+  };
 
-            //Decode and store user info
-            const decoded = jwtDecode(data.access);
-            setUser(data.user);
+  const value = {
+    user,
+    login,
+    logout,
+    loading,
+  };
 
-            return data;
-        } catch(error) {
-            console.error('Login error:', error);
-            throw error;
-        }
-    };
-
-
-    //clears tokens and user data
-    const logout = () => {
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
-        setUser(null);
-    };
-
-    const value = {
-        user, 
-        login,
-        logout,
-        loading,
-    };
-
-    return <AuthContext.Provider value={value}>
-        {children}
-    </AuthContext.Provider>;
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
-//custom hook to access auth context from any component
 export const useAuth = () => {
-    const context = useContext(AuthContext);
-    if(!context)
-    {
-        throw new Error('useAuth must be used within an attribute');
-    }
-
-    return context;
-}
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
