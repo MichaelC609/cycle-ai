@@ -1,11 +1,22 @@
 from django.http import HttpResponse, JsonResponse
 from rest_framework import generics, status
 from rest_framework.response import Response
+from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
-from .models import Route
+from .models import Route, User
 from .serializers import RouteSerializer
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
+
+
+
 from django.conf import settings
 from django.db import connection
+
+from rest_framework_simplejwt.tokens import RefreshToken
+from google.oauth2 import id_token
+from google.auth.transport import requests as google_requests
+
 import requests
 import json
 
@@ -312,3 +323,99 @@ class RouteView(APIView):
                 'message': 'Error deleting route',
                 'error': str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+@csrf_exempt
+def google_login_view(request):
+    """
+    Function-based view to handle Google OAuth login
+    This bypasses REST Framework's authentication system
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+    
+    print("=== Google Login Function View Called ===")
+    print(f"Request method: {request.method}")
+    print(f"Content-Type: {request.content_type}")
+    
+    try:
+        # Parse JSON body
+        body = json.loads(request.body)
+        token = body.get('credential')
+        
+        print(f"Received credential: {token[:20] if token else 'None'}...")
+        
+        if not token:
+            return JsonResponse({'error': 'No credential provided'}, status=400)
+        
+        # Verify Google token
+        idinfo = id_token.verify_oauth2_token(
+            token, 
+            google_requests.Request(), 
+            settings.GOOGLE_CLIENT_ID
+        )
+        
+        print(f"Token verified for email: {idinfo.get('email')}")
+        
+        email = idinfo.get('email')
+        google_id = idinfo.get('sub')
+        first_name = idinfo.get('given_name', '')
+        last_name = idinfo.get('family_name', '')
+        profile_picture = idinfo.get('picture', '')
+        
+        if not idinfo.get('email_verified', False):
+            return JsonResponse({'error': 'Email not verified by Google'}, status=400)
+        
+        # Get or create user
+        user = None
+        try:
+            user = User.objects.get(google_id=google_id)
+            print(f"Found existing user: {user.email}")
+        except User.DoesNotExist:
+            try:
+                user = User.objects.get(email=email)
+                user.google_id = google_id
+                user.is_oauth_user = True
+                user.profile_picture = profile_picture
+                user.save()
+                print(f"Updated existing user: {user.email}")
+            except User.DoesNotExist:
+                user = User.objects.create(
+                    email=email,
+                    username=email,
+                    google_id=google_id,
+                    first_name=first_name,
+                    last_name=last_name,
+                    profile_picture=profile_picture,
+                    is_oauth_user=True,
+                )
+                print(f"Created new user: {user.email}")
+        
+        # Generate JWT tokens
+        refresh = RefreshToken.for_user(user)
+        
+        response_data = {
+            'refresh': str(refresh),
+            'access': str(refresh.access_token),
+            'user': {
+                'id': user.id,
+                'email': user.email,
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'profile_picture': user.profile_picture,
+            }
+        }
+        
+        print(f"Login successful for: {user.email}")
+        return JsonResponse(response_data, status=200)
+        
+    except json.JSONDecodeError:
+        print("ERROR: Invalid JSON in request body")
+        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+    except ValueError as e:
+        print(f"Token verification failed: {str(e)}")
+        return JsonResponse({'error': 'Invalid Google token', 'details': str(e)}, status=401)
+    except Exception as e:
+        print(f"Unexpected error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({'error': 'Authentication failed', 'details': str(e)}, status=500)

@@ -3,6 +3,7 @@ import Link from 'next/link';
 
 function Navbar()
 {
+
   return (
     <div className="container">
       <header>
@@ -29,8 +30,8 @@ function Navbar()
           </ul>
         </nav>
         <div className="buttons">
-          <button className="login-btn">Log in</button>
-          <button className="signup-btn">Sign up</button>
+            <button className="login-btn">Log in</button>
+            <button className="signup-btn">Sign up</button>
         </div>
     </header>
     </div>

@@ -14,11 +14,12 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
-from django.urls import path
+from django.urls import path, include
 from . import views
-from .views import RouteView
+from .views import RouteView, google_login_view
 
 urlpatterns = [
     path('', RouteView.as_view(), name="route-list"),  # GET /api/routes/
-    path('add/', RouteView.as_view(), name="add-route")  # POST /api/routes/add/
+    path('add/', RouteView.as_view(), name="add-route"),  # POST /api/routes/add/
+    path('auth/google/', google_login_view, name='google-login'),
 ]

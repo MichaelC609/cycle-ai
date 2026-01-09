@@ -2,6 +2,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import GoogleMapsProvider from "./GoogleMapsProvider";
 import { RouteProvider } from "./context/RouteContext";
+import { GoogleOAuthProvider } from '@react-oauth/google';
+import { AuthProvider } from "./context/AuthContext";
 
 
 const geistSans = Geist({
@@ -23,11 +25,15 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
-        <GoogleMapsProvider>
-          <RouteProvider>
-            {children}
-          </RouteProvider>
-        </GoogleMapsProvider>
+        <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID}>
+          <AuthProvider>
+            <GoogleMapsProvider>
+              <RouteProvider>
+                {children}
+              </RouteProvider>
+            </GoogleMapsProvider>
+          </AuthProvider>
+        </GoogleOAuthProvider>
       </body>
     </html>
   );
