@@ -24,12 +24,12 @@ class User(AbstractUser):
 #Class for Routes/Route Preferences
 class Route(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='routes')
-    name = models.CharField(max_length=255)
-    start_location = models.CharField(max_length=255)
-    end_location = models.CharField(max_length=255)
-    distance = models.FloatField()
-    duration = models.FloatField()
-    created_at = models.DateTimeField(default=timezone.now)  # Changed from auto_now_add
+    name = models.CharField(max_length=255, default='Unnamed Route')
+    start_location = models.CharField(max_length=255, default='')
+    end_location = models.CharField(max_length=255, default='')
+    distance = models.FloatField(default=0.0)
+    duration = models.FloatField(default=0.0)
+    created_at = models.DateTimeField(default=timezone.now)
     
     def __str__(self):
         return f"Route: {self.start_location} → {self.end_location}"
