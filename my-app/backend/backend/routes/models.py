@@ -1,5 +1,6 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.utils import timezone
 
 class User(AbstractUser):
     #User model to store additional Google info
@@ -28,7 +29,7 @@ class Route(models.Model):
     end_location = models.CharField(max_length=255)
     distance = models.FloatField()
     duration = models.FloatField()
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(default=timezone.now)  # Changed from auto_now_add
     
     def __str__(self):
-        return f"Route {self.route_id}: {self.start_location} → {self.end_location}"
+        return f"Route: {self.start_location} → {self.end_location}"
