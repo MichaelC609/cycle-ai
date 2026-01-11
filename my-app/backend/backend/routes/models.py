@@ -23,7 +23,8 @@ class User(AbstractUser):
 
 #Class for Routes/Route Preferences
 class Route(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='routes')
+    route_id = models.AutoField(primary_key=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='routes', null=True, blank=True)
     name = models.CharField(max_length=255, default='Unnamed Route')
     start_location = models.CharField(max_length=255, default='')
     end_location = models.CharField(max_length=255, default='')
