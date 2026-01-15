@@ -2,15 +2,18 @@
 
 import { useState, useRef, useEffect } from "react";
 import { GoogleMap, Polyline } from "@react-google-maps/api";
-import RouteWeatherDisplay from "./RouteWeatherDisplay";
-import { useRoutes } from "../context/RouteContext";
-import SaveRoute from "./SaveRoute";
+import RouteWeatherDisplay from "../RouteWeatherDisplay";
+import { useRoutes } from "../../context/RouteContext";
+import SaveRoute from "../SaveRoute";
+import './Map.css'
 
 const containerStyle = {
   width: "900px",
   height: "600px",
+  border: "3px solid yellow",
+  margin: "20px",
+  borderRadius: "8px",
 };
-
 
 
 const defaultCenter = { lat: 34.0522, lng: -118.2437 }; // LA default
@@ -255,47 +258,25 @@ export default function Map() {
   }, [selectedRoute, apiRoutes, start, end, setCurrentRoute]);
 
   return (
-    <div className="space-y-4" style={{ marginTop: '6rem', maxWidth: '900px', marginLeft: '2rem', marginRight: '2rem' }}>
+    <div className="space-y-4" style={{marginTop: '6rem', maxWidth: '900px', marginLeft: '2rem', marginRight: '2rem' }}>
       <div className="bg-white p-4 rounded-md shadow-sm space-y-3">
         <h3 className="font-semibold text-lg">Route Preferences</h3>
-
-        <div className="flex-items-center gap-2">
-          <input 
-            type="checkbox"
-            id="preferBikeLanes"
-            checked={preferences.preferBikeLanes}
-            onChange={(e) => setPreferences({...preferences, preferBikeLanes: e.target.checked})}
-          />
-          <label htmlFor="preferBikeLanes">Prefer bike lanes</label>
-        </div>
-
-        <div className="flex flex-col gap-2">
-          <label htmlFor="routeType">Route Type: </label>
-          <select
-            id="routeType"
-            value={preferences.routeType}
-            onChange={(e) => setPreferences({...preferences, routeType: e.target.value})}
-            className="border p-2 rounded"
-          >
-              <option value="fastest">Fastest</option>
-              <option value="balanced">Balanced</option>
-              <option value="scenic">Scenic</option>
-          </select>
-        </div>
-
-        
       </div>
+      <h2>Enter Your Start Location:</h2>
       <form
         onSubmit={handleSubmit}
         className="flex items-center gap-2 bg-gray-100 p-3 rounded-md"
       >
+
         <input
           type="text"
           placeholder="Start location"
           value={start}
           onChange={(e) => setStart(e.target.value)}
-          className="border p-2 rounded w-full"
+          className="start-form"
         />
+
+        <h2>Enter Your End Location:</h2>
 
         <input
           type="text"

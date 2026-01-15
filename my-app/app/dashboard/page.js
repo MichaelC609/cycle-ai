@@ -2,6 +2,7 @@
 
 import { useAuth } from '../context/AuthContext';
 import { useRouter } from 'next/navigation';  // Changed from 'next/router'
+import Navbar from '../components/Navbar/Navbar';
 
 export default function Dashboard() {
   const { user, logout, loading } = useAuth();
@@ -22,6 +23,7 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gray-100 p-8">
+      <Navbar />
       <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-md p-6">
         <h1 className="text-3xl font-bold mb-4">Dashboard</h1>
         <div className="mb-6">

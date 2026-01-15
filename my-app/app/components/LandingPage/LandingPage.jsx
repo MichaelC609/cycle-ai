@@ -30,12 +30,6 @@ function LandingPage()
                     >
                         Get Started
                     </button>
-                    <button 
-                        onClick={handleGetStarted}
-                        className="btn-secondary"
-                    >
-                        Sign In
-                    </button>
                 </div>
             </div>
             <div className="bike-container">
