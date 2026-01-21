@@ -1,10 +1,11 @@
 "use client";
 
-import { useRoutes } from "../context/RouteContext";
+import { useRoutes } from "../../context/RouteContext";
 import { useState, useEffect, useCallback } from "react";
-import RouteInfo from "./RouteInfo/RouteInfo.jsx";
-import "./RouteInfo/RouteInfo.css";
-import Navbar from "./Navbar/Navbar";
+import RouteInfo from "../../components/RouteInfo/RouteInfo.jsx";
+import "../../components/RouteInfo/RouteInfo.css";
+import Navbar from "../../components/Navbar/Navbar";
+import './savedRoutesList.css'
 
 export default function SavedRoutesList()
 {
@@ -113,9 +114,9 @@ export default function SavedRoutesList()
     if (savedRoutes.length === 0)
     {
         return (
-            <div className="bg-white p-4 rounded-md shadow-sm">
+            <div className="no-routes-container">
                 <h3 className="font-semibold text-lg mb-3">Saved Routes</h3>
-                <p className="text-gray-500">No saved routes. Add a route to see it here!</p>
+                <p className="no-routes">No saved routes. Add a route to see it here!</p>
                 <button 
                     onClick={fetchRoutes}
                     className="mt-2 px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
@@ -128,7 +129,7 @@ export default function SavedRoutesList()
 
     else
     {
-        const styles = {color: "blue"}
+        const styles = {color: "white", margin: "20px", fontSize: "1.2rem"}
         return (
         <div>
             <Navbar />

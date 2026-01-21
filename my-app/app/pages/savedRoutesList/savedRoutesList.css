@@ -1,0 +1,13 @@
+.no-routes{
+    color: white;
+}
+
+.no-routes-container {
+    text-align: left;
+    margin: 20px;
+    padding: 20px;
+}
+
+.no-routes-container h3 {
+    color: white;
+}

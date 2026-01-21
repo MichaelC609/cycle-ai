@@ -2,7 +2,7 @@
 
 import PageLayout from "./components/PageLayout";
 import SaveRoute from "./components/SaveRoute";
-import SavedRoutesList from "./components/SavedRoutesList";
+import SavedRoutesList from "./pages/savedRoutesList/SavedRoutesList";
 import Navbar from "./components/Navbar/Navbar";
 import LandingPage from "./components/LandingPage/LandingPage.jsx";
 

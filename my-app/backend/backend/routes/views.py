@@ -155,7 +155,7 @@ class RouteView(APIView):
                 cursor.execute("""
                     SELECT route_id, start_location, end_location, polyline, cities 
                     FROM routes_route 
-                    ORDER BY route_id DESC
+                    ORDER BY route_id ASC
                 """)
                 
                 # Fetch all rows

@@ -4,7 +4,7 @@ function RouteInfo(props)
 {
     const styles = {
         backgroundColor: "hsl(200, 100%, 50%)",
-        color: "white",
+        color: "black",
         padding: "10px 20px",
         borderRadius: "10px",
         cursor: "pointer",

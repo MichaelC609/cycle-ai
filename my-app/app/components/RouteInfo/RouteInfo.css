@@ -37,8 +37,13 @@
 
 .route-header h1 {
     margin: 0;
+    color: black;
     font-size: 1.25rem;
     font-weight: 600;
+}
+
+.route-info h2 {
+    color: black;
 }
 
 /* Delete button styling */
