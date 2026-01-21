@@ -28,6 +28,8 @@ class Route(models.Model):
     name = models.CharField(max_length=255, default='Unnamed Route')
     start_location = models.CharField(max_length=255, default='')
     end_location = models.CharField(max_length=255, default='')
+    polyline = models.TextField(blank=True, default='')
+    cities = models.JSONField(blank=True, null=True, default=list)
     distance = models.FloatField(default=0.0)
     duration = models.FloatField(default=0.0)
     created_at = models.DateTimeField(default=timezone.now)

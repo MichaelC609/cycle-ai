@@ -8,12 +8,21 @@ export async function GET(request)
     try {
         console.log("Fetching routes from Django backend...");
         
+        // Get Authorization header from incoming request
+        const authHeader = request.headers.get('Authorization');
+        
+        const headers = {
+            'Content-Type': 'application/json',
+        };
+        
+        if (authHeader) {
+            headers['Authorization'] = authHeader;
+        }
+        
         // Forward request to Django backend
         const djangoResponse = await fetch(`${BACKEND_URL}/api/routes/`, {
             method: "GET",
-            headers: {
-                'Content-Type': 'application/json',
-            }
+            headers: headers
         });
 
         const data = await djangoResponse.json();
@@ -46,12 +55,21 @@ export async function POST(request)
         const routeData = await request.json();
         console.log("Received route data:", routeData);
 
+        // Get Authorization header from incoming request
+        const authHeader = request.headers.get('Authorization');
+        
+        const headers = {
+            'Content-Type': 'application/json',
+        };
+        
+        if (authHeader) {
+            headers['Authorization'] = authHeader;
+        }
+
         // Forward request to Django backend
         const djangoResponse = await fetch(`${BACKEND_URL}/api/routes/`, {
             method: "POST",
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers: headers,
             body: JSON.stringify(routeData)
         });
 
@@ -102,12 +120,21 @@ export async function DELETE(request)
         
         console.log(`Deleting route ${route_id} via Django backend...`);
         
+        // Get Authorization header from incoming request
+        const authHeader = request.headers.get('Authorization');
+        
+        const headers = {
+            'Content-Type': 'application/json',
+        };
+        
+        if (authHeader) {
+            headers['Authorization'] = authHeader;
+        }
+        
         // Forward delete request to Django backend
         const djangoResponse = await fetch(`${BACKEND_URL}/api/routes/?route_id=${route_id}`, {
             method: "DELETE",
-            headers: {
-                'Content-Type': 'application/json',
-            }
+            headers: headers
         });
 
         const data = await djangoResponse.json();

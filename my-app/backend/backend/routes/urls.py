@@ -16,10 +16,11 @@ Including another URLconf
 """
 from django.urls import path, include
 from . import views
-from .views import RouteView, google_login_view
+from .views import RouteView, google_login_view, google_logout_view
 
 urlpatterns = [
     path('', RouteView.as_view(), name="route-list"),  # GET /api/routes/
     path('add/', RouteView.as_view(), name="add-route"),  # POST /api/routes/add/
     path('auth/google/', google_login_view, name='google-login'),
+    path('auth/logout/', google_logout_view, name='logout'),
 ]

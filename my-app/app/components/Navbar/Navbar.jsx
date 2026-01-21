@@ -1,10 +1,28 @@
 import './Navbar.css';
 import Link from 'next/link';
 import { useAuth } from '@/app/context/AuthContext';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 function Navbar()
 {
-  const user = useAuth();
+  const { user, logout, loggingOut } = useAuth();
+  const router = useRouter();
+  const [logoutError, setLogoutError] = useState(null);
+
+  const handleLogout = async () => {
+    try {
+      setLogoutError(null);
+      await logout();
+      
+      // Force full page reload to home page to clear all state
+      window.location.href = '/';
+    } catch (error) {
+      console.error('Logout failed:', error);
+      // Still redirect to home even on error since local state is cleared
+      window.location.href = '/';
+    }
+  };
 
   if(!user)
   {
@@ -68,6 +86,18 @@ function Navbar()
               </li>
             </ul>
           </nav>
+          <div className="buttons">
+            <button 
+              className="login-btn" 
+              onClick={handleLogout}
+              disabled={loggingOut}
+            >
+              {loggingOut ? 'Logging out...' : 'Logout'}
+            </button>
+            {logoutError && (
+              <span className="logout-error">{logoutError}</span>
+            )}
+          </div>
       </header>
       </div>
     );

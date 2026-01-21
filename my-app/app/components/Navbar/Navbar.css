@@ -107,3 +107,32 @@ header{
     box-shadow: 0 0 15px #fff;
     color: white;
 }
+
+.login-btn:disabled{
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.login-btn:disabled:hover{
+    background-color: initial;
+    box-shadow: none;
+}
+
+.logout-error{
+    color: #ff6b6b;
+    font-size: 12px;
+    margin-left: 10px;
+    font-family: 'Montserrat', sans-serif;
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-5px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

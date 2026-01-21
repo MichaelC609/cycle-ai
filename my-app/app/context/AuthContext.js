@@ -11,6 +11,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('access_token');
@@ -65,10 +66,46 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
-    setUser(null);
+  const logout = async () => {
+    try {
+      setLoggingOut(true);
+      
+      // Call backend logout endpoint
+      const token = localStorage.getItem('access_token');
+      
+      if (token) {
+        try {
+          await fetch(`${API_URL}/api/routes/auth/logout/`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+          });
+        } catch (backendError) {
+          // Continue with logout even if backend call fails
+          console.warn('Backend logout failed, continuing with local logout:', backendError);
+        }
+      }
+      
+      // Clear local storage
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+      
+      // Clear user state
+      setUser(null);
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Still clear local data even on error for security
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+      setUser(null);
+      return { success: false, error: error.message };
+    } finally {
+      setLoggingOut(false);
+    }
   };
 
   const value = {
@@ -76,6 +113,7 @@ export const AuthProvider = ({ children }) => {
     login,
     logout,
     loading,
+    loggingOut,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -2,11 +2,15 @@
 
 import React, { useState } from "react";
 import { useRoutes } from "../context/RouteContext";
+import { useAuth } from "../context/AuthContext";
+import { useRouter } from 'next/navigation';
 
 export default function SaveRoute()
 {
     //access route from context
     const { currentRoute, addSavedRoute } = useRoutes();
+    const { user } = useAuth();
+    const router = useRouter();
 
     //state for ui feedback
     const [isSaving, setIsSaving] = useState(false);
@@ -19,6 +23,14 @@ export default function SaveRoute()
         if (!currentRoute)
         {
             setMessage("No route selected. Please find a route first");
+            return;
+        }
+
+        // Check if user is logged in
+        const token = localStorage.getItem('access_token');
+        if (!token) {
+            setMessage("Please log in to save routes");
+            setTimeout(() => router.push('/login'), 2000);
             return;
         }
 
@@ -40,13 +52,23 @@ export default function SaveRoute()
             const response = await fetch("/api/routes", {
                 method: "POST",
                 headers: {
-                    "Content-Type": "application/json"
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
                 },
                 body: JSON.stringify(routeData),
             });
 
             //parse the response
             const data = await response.json();
+
+            // Handle unauthorized
+            if (response.status === 401) {
+                setMessage("Session expired. Please log in again.");
+                localStorage.removeItem('access_token');
+                localStorage.removeItem('refresh_token');
+                setTimeout(() => router.push('/login'), 2000);
+                return;
+            }
 
             //check if save was successful
             if(response.ok)

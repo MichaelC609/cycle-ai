@@ -13,12 +13,43 @@ from django.utils.decorators import method_decorator
 from django.conf import settings
 from django.db import connection
 
-from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
+from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 
 import requests
 import json
+
+# Helper function to get user from JWT token
+def get_user_from_token(request):
+    """
+    Extract and validate user from Authorization header
+    Returns User object or None
+    """
+    auth_header = request.headers.get('Authorization', '')
+    
+    if not auth_header.startswith('Bearer '):
+        return None
+    
+    token = auth_header.split(' ')[1]
+    
+    try:
+        # Decode and validate the access token
+        access_token = AccessToken(token)
+        user_id = access_token.get('user_id')
+        
+        if user_id:
+            try:
+                user = User.objects.get(id=user_id)
+                return user
+            except User.DoesNotExist:
+                return None
+    except (InvalidToken, TokenError) as e:
+        print(f"Token validation error: {e}")
+        return None
+    
+    return None
 
 #helper function to return a list of unique cities from an encoded polyline
 def extractCitiesFromPolyline(encodedPolyline):
@@ -148,15 +179,25 @@ class RouteView(APIView):
     """API View using raw SQL queries for route operations"""
     
     def get(self, request, *args, **kwargs):
-        """List all routes using raw SQL SELECT query"""
+        """List user's routes using raw SQL SELECT query - requires authentication"""
         try:
+            # Get authenticated user
+            user = get_user_from_token(request)
+            
+            if not user:
+                return Response({
+                    'message': 'Authentication required',
+                    'error': 'Please log in to view your routes'
+                }, status=status.HTTP_401_UNAUTHORIZED)
+            
             with connection.cursor() as cursor:
-                # Execute SQL SELECT query
+                # Execute SQL SELECT query filtered by user_id
                 cursor.execute("""
                     SELECT route_id, start_location, end_location, polyline, cities 
                     FROM routes_route 
+                    WHERE user_id = %s
                     ORDER BY route_id ASC
-                """)
+                """, [user.id])
                 
                 # Fetch all rows
                 rows = cursor.fetchall()
@@ -201,8 +242,17 @@ class RouteView(APIView):
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     def post(self, request, *args, **kwargs):
-        """Create a new route using raw SQL INSERT query"""
+        """Create a new route using raw SQL INSERT query - requires authentication"""
         try:
+            # Get authenticated user
+            user = get_user_from_token(request)
+            
+            if not user:
+                return Response({
+                    'message': 'Authentication required',
+                    'error': 'Please log in to save routes'
+                }, status=status.HTTP_401_UNAUTHORIZED)
+            
             # Get data from request
             data = request.data
             start_location = data.get('start_location')
@@ -231,12 +281,12 @@ class RouteView(APIView):
             cities_json = json.dumps(cities)
             
             with connection.cursor() as cursor:
-                # Execute SQL INSERT query with RETURNING clause
+                # Execute SQL INSERT query with RETURNING clause, including user_id
                 cursor.execute("""
-                    INSERT INTO routes_route (start_location, end_location, polyline, cities) 
-                    VALUES (%s, %s, %s, %s) 
+                    INSERT INTO routes_route (start_location, end_location, polyline, cities, user_id) 
+                    VALUES (%s, %s, %s, %s, %s) 
                     RETURNING route_id, start_location, end_location, polyline, cities
-                """, [start_location, end_location, polyline, cities_json])
+                """, [start_location, end_location, polyline, cities_json, user.id])
                 
                 # Fetch the inserted row
                 row = cursor.fetchone()
@@ -278,8 +328,17 @@ class RouteView(APIView):
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     def delete(self, request, *args, **kwargs):
-        """Delete a route using raw SQL DELETE query"""
+        """Delete a route using raw SQL DELETE query - requires authentication and ownership"""
         try:
+            # Get authenticated user
+            user = get_user_from_token(request)
+            
+            if not user:
+                return Response({
+                    'message': 'Authentication required',
+                    'error': 'Please log in to delete routes'
+                }, status=status.HTTP_401_UNAUTHORIZED)
+            
             # Get route_id from query parameters
             route_id = request.query_params.get('route_id')
             
@@ -290,22 +349,31 @@ class RouteView(APIView):
                 }, status=status.HTTP_400_BAD_REQUEST)
             
             with connection.cursor() as cursor:
-                # First check if route exists
+                # Check if route exists and belongs to user
                 cursor.execute(
-                    "SELECT route_id FROM routes_route WHERE route_id = %s",
+                    "SELECT route_id, user_id FROM routes_route WHERE route_id = %s",
                     [route_id]
                 )
                 
-                if not cursor.fetchone():
+                route = cursor.fetchone()
+                
+                if not route:
                     return Response({
                         'message': 'Route not found',
                         'error': f'No route with id {route_id}'
                     }, status=status.HTTP_404_NOT_FOUND)
                 
+                # Check if route belongs to user
+                if route[1] != user.id:
+                    return Response({
+                        'message': 'Permission denied',
+                        'error': 'You can only delete your own routes'
+                    }, status=status.HTTP_403_FORBIDDEN)
+                
                 # Execute SQL DELETE query
                 cursor.execute(
-                    "DELETE FROM routes_route WHERE route_id = %s",
-                    [route_id]
+                    "DELETE FROM routes_route WHERE route_id = %s AND user_id = %s",
+                    [route_id, user.id]
                 )
                 
                 print(f"Route {route_id} deleted successfully using SQL")
@@ -324,6 +392,34 @@ class RouteView(APIView):
                 'error': str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
+@csrf_exempt
+def google_logout_view(request):
+    """
+    Function-based view to handle logout
+    Invalidates the user's session
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+    
+    print("=== Logout Function View Called ===")
+    
+    try:
+        # Clear any server-side session data if using sessions
+        if hasattr(request, 'session'):
+            request.session.flush()
+        
+        print("Logout successful")
+        return JsonResponse({
+            'message': 'Logout successful'
+        }, status=200)
+        
+    except Exception as e:
+        print(f"Logout error: {str(e)}")
+        return JsonResponse({
+            'error': 'Logout failed',
+            'details': str(e)
+        }, status=500)
+
 @csrf_exempt
 def google_login_view(request):
     """

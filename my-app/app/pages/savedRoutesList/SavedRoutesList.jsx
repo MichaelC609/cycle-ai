@@ -1,7 +1,9 @@
 "use client";
 
 import { useRoutes } from "../../context/RouteContext";
+import { useAuth } from "../../context/AuthContext";
 import { useState, useEffect, useCallback } from "react";
+import { useRouter } from 'next/navigation';
 import RouteInfo from "../../components/RouteInfo/RouteInfo.jsx";
 import "../../components/RouteInfo/RouteInfo.css";
 import Navbar from "../../components/Navbar/Navbar";
@@ -11,6 +13,8 @@ export default function SavedRoutesList()
 {
     //access saved routes from context
     const {savedRoutes, setSavedRoutes } = useRoutes();
+    const { user } = useAuth();
+    const router = useRouter();
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
@@ -20,8 +24,31 @@ export default function SavedRoutesList()
             setLoading(true);
             setError(null);
             
+            // Get auth token
+            const token = localStorage.getItem('access_token');
+            
+            if (!token) {
+                setError('Please log in to view your routes');
+                setLoading(false);
+                return;
+            }
+            
             // Fetch from Next.js API which forwards to Django backend
-            const response = await fetch('/api/routes');
+            const response = await fetch('/api/routes', {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (response.status === 401) {
+                setError('Session expired. Please log in again.');
+                localStorage.removeItem('access_token');
+                localStorage.removeItem('refresh_token');
+                setTimeout(() => router.push('/login'), 2000);
+                setLoading(false);
+                return;
+            }
             
             if (!response.ok) {
                 throw new Error(`Failed to fetch routes: ${response.status}`);
@@ -53,7 +80,7 @@ export default function SavedRoutesList()
         } finally {
             setLoading(false);
         }
-    }, [setSavedRoutes]);
+    }, [setSavedRoutes, router]);
 
     // Fetch routes when component mounts
     useEffect(() => {
@@ -63,9 +90,28 @@ export default function SavedRoutesList()
     // Delete route handler
     const handleDeleteRoute = async (routeId) => {
         try {
+            // Get auth token
+            const token = localStorage.getItem('access_token');
+            
+            if (!token) {
+                alert('Please log in to delete routes');
+                router.push('/login');
+                return;
+            }
+            
             const response = await fetch(`/api/routes?route_id=${routeId}`, {
-                method: 'DELETE'
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
             });
+            
+            if (response.status === 401) {
+                alert('Session expired. Please log in again.');
+                router.push('/login');
+                return;
+            }
             
             if (!response.ok) {
                 const errorData = await response.json();
