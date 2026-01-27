@@ -12,7 +12,7 @@ import './savedRoutesList.css'
 export default function SavedRoutesList()
 {
     //access saved routes from context
-    const {savedRoutes, setSavedRoutes } = useRoutes();
+    const {savedRoutes, setSavedRoutes, setVisualizingRoute } = useRoutes();
     const { user } = useAuth();
     const router = useRouter();
     const [loading, setLoading] = useState(true);
@@ -81,6 +81,19 @@ export default function SavedRoutesList()
             setLoading(false);
         }
     }, [setSavedRoutes, router]);
+
+    // Handle visualizing a route - store in context and navigate to view page
+    const handleVisualizeRoute = (route) => {
+        setVisualizingRoute({
+            route_id: route.route_id,
+            start_location: route.start_location,
+            end_location: route.end_location,
+            polyline: route.polyline,
+            cities: route.cities || []
+        });
+        
+        router.push('/route-view');
+    };
 
     // Fetch routes when component mounts
     useEffect(() => {
@@ -193,6 +206,7 @@ export default function SavedRoutesList()
                         endLocation={route.end_location}
                         cities={route.cities || []}
                         onDelete={() => handleDeleteRoute(route.route_id)}
+                        onVisualize={() => handleVisualizeRoute(route)}
                     />
                 ))}
             </div>

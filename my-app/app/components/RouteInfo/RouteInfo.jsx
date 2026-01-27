@@ -35,6 +35,10 @@ function RouteInfo(props)
             ) : (
                 <p>No cities along route</p>
             )}
+
+            {props.onVisualize && (
+                <button className='reRender-btn' onClick={props.onVisualize}>Visualize Route</button>
+            )}
         </div>
     );
 }

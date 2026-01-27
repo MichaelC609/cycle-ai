@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { GoogleMap, Polyline } from "@react-google-maps/api";
+import { decode } from "@googlemaps/polyline-codec";
 import RouteWeatherDisplay from "../RouteWeatherDisplay";
 import { useRoutes } from "../../context/RouteContext";
 import SaveRoute from "../SaveRoute";
@@ -18,7 +19,7 @@ const containerStyle = {
 
 const defaultCenter = { lat: 34.0522, lng: -118.2437 }; // LA default
 
-export default function Map() {
+export default function Map({ visualizingMode = false }) {
   const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
   const [routes, setRoutes] = useState([]);
@@ -26,8 +27,9 @@ export default function Map() {
   const [routeDetails, setRouteDetails] = useState([]);
   const [cities, setCities] = useState([]);
 
-  const { setCurrentRoute, setFetchedRoutes } = useRoutes();
+  const { setCurrentRoute, setFetchedRoutes, visualizingRoute } = useRoutes();
   const [apiRoutes, setApiRoutes] = useState([]); //Store raw API response
+  const [mapCenter, setMapCenter] = useState(defaultCenter);
 
   //state for route preferences and filtering
   const [preferences, setPreferences] = useState({
@@ -38,6 +40,50 @@ export default function Map() {
   });
 
   const mapRef = useRef(null);
+
+  // Decode polyline and calculate map bounds when visualizing a saved route
+  const decodedPolyline = useMemo(() => {
+    if (visualizingMode && visualizingRoute?.polyline) {
+      try {
+        const decoded = decode(visualizingRoute.polyline, 5);
+        // Convert from [lat, lng] format to { lat, lng } objects
+        return decoded.map(([lat, lng]) => ({ lat, lng }));
+      } catch (err) {
+        console.error('Error decoding polyline:', err);
+        return [];
+      }
+    }
+    return [];
+  }, [visualizingRoute?.polyline, visualizingMode]);
+
+  // Calculate map center and zoom based on polyline bounds
+  useEffect(() => {
+    if (visualizingMode && decodedPolyline.length > 0) {
+      // Calculate bounds
+      const lats = decodedPolyline.map(p => p.lat);
+      const lngs = decodedPolyline.map(p => p.lng);
+      
+      const minLat = Math.min(...lats);
+      const maxLat = Math.max(...lats);
+      const minLng = Math.min(...lngs);
+      const maxLng = Math.max(...lngs);
+      
+      // Set center to middle of bounds
+      const centerLat = (minLat + maxLat) / 2;
+      const centerLng = (minLng + maxLng) / 2;
+      
+      setMapCenter({ lat: centerLat, lng: centerLng });
+      
+      // Fit map to bounds
+      if (mapRef.current) {
+        const bounds = new window.google.maps.LatLngBounds();
+        decodedPolyline.forEach(point => {
+          bounds.extend(point);
+        });
+        mapRef.current.fitBounds(bounds);
+      }
+    }
+  }, [decodedPolyline, visualizingMode]);
 
 //NEW PLACES API — Convert text → {latitude, longitude}
   async function geocodePlaceText(query) {
@@ -259,50 +305,67 @@ export default function Map() {
 
   return (
     <div className="space-y-4" style={{marginTop: '6rem', maxWidth: '900px', marginLeft: '2rem', marginRight: '2rem' }}>
-      <div className="bg-white p-4 rounded-md shadow-sm space-y-3">
-        <h3 className="font-semibold text-lg">Route Preferences</h3>
-      </div>
-      <h2>Enter Your Start Location:</h2>
-      <form
-        onSubmit={handleSubmit}
-        className="flex items-center gap-2 bg-gray-100 p-3 rounded-md"
-      >
+      {!visualizingMode && (
+        <>
+          <div className="bg-white p-4 rounded-md shadow-sm space-y-3">
+            <h3 className="font-semibold text-lg">Route Preferences</h3>
+          </div>
+          <h2>Enter Your Start Location:</h2>
+          <form
+            onSubmit={handleSubmit}
+            className="flex items-center gap-2 bg-gray-100 p-3 rounded-md"
+          >
 
-        <input
-          type="text"
-          placeholder="Start location"
-          value={start}
-          onChange={(e) => setStart(e.target.value)}
-          className="start-form"
-        />
+            <input
+              type="text"
+              placeholder="Start location"
+              value={start}
+              onChange={(e) => setStart(e.target.value)}
+              className="start-form"
+            />
 
-        <h2>Enter Your End Location:</h2>
+            <h2>Enter Your End Location:</h2>
 
-        <input
-          type="text"
-          placeholder="End location"
-          value={end}
-          onChange={(e) => setEnd(e.target.value)}
-          className="border p-2 rounded w-full"
-        />
+            <input
+              type="text"
+              placeholder="End location"
+              value={end}
+              onChange={(e) => setEnd(e.target.value)}
+              className="border p-2 rounded w-full"
+            />
 
-        <button
-          type="submit"
-          className="px-4 py-2 bg-black text-white rounded"
-        >
-          Find Bike Routes
-        </button>
-      </form>
+            <button
+              type="submit"
+              className="px-4 py-2 bg-black text-white rounded"
+            >
+              Find Bike Routes
+            </button>
+          </form>
+        </>
+      )}
 
       {/* ---------------------- MAP ---------------------- */}
       <GoogleMap
         mapContainerStyle={containerStyle}
-        center={defaultCenter}
-        zoom={12}
+        center={visualizingMode ? mapCenter : defaultCenter}
+        zoom={visualizingMode ? 13 : 12}
         onLoad={(map) => (mapRef.current = map)}
       >
-        {/* Draw all route alternatives */}
-        {routes.map((path, index) => (
+        {/* Draw saved route polyline in visualizing mode */}
+        {visualizingMode && decodedPolyline.length > 0 && (
+          <Polyline
+            path={decodedPolyline}
+            options={{
+              strokeColor: "#2412e8ff",
+              strokeOpacity: 1.0,
+              strokeWeight: 6,
+              clickable: false,
+            }}
+          />
+        )}
+        
+        {/* Draw all route alternatives in planning mode */}
+        {!visualizingMode && routes.map((path, index) => (
           <Polyline
             key={index}
             path={path}
@@ -317,8 +380,8 @@ export default function Map() {
         ))}
       </GoogleMap>
 
-      {/* Route Details Panel */}
-        {routes.length > 0 && (
+      {/* Route Details Panel - only show in planning mode */}
+        {!visualizingMode && routes.length > 0 && (
           <div className="bg-white p-4 rounded-md shadow-sm">
             <h3 className="font-semibold text-lg mb-3"> Available Routes </h3>
             <div className="space-y-2">
@@ -350,12 +413,12 @@ export default function Map() {
           </div>
         )}
 
-        {/* Cities List Component */}
-        {cities.length > 0 && (
+        {/* Cities List Component - show in visualizing mode from saved route, or in planning mode from current route */}
+        {((visualizingMode && visualizingRoute?.cities?.length > 0) || (!visualizingMode && cities.length > 0)) && (
           <div className="bg-white p-4 rounded-md shadow-sm">
             <h3 className="font-semibold text-lg mb-3">Cities Along Route</h3>
             <div className="space-y-4">
-              {cities.map((city, index) => (
+              {(visualizingMode ? visualizingRoute.cities : cities).map((city, index) => (
                 <div key={index} className="border-b pb-4 last:border-b-0">
                   <h4 className="font-medium mb-2">{city}</h4>
                   <RouteWeatherDisplay cityName={city} />
@@ -363,7 +426,7 @@ export default function Map() {
               ))}
             </div>
             <div className="mt-3 text-sm text-gray-600">
-              <p>Total cities: {cities.length}</p>
+              <p>Total cities: {(visualizingMode ? visualizingRoute?.cities?.length : cities.length) || 0}</p>
             </div>
           </div>
         )}

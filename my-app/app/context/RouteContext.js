@@ -16,6 +16,9 @@ export function RouteProvider({ children }) {
     //state to store all fetched routes with encoded polyline
     const [fetchedRoutes, setFetchedRoutes] = useState([]);
 
+    //state to visualize pre-rendered route
+    const [visualizingRoute, setVisualizingRoute] = useState(null);
+
     //add route to saved routes list
     const addSavedRoute = (route) => {
         setSavedRoutes(prev => [...prev, route]);
@@ -30,7 +33,9 @@ export function RouteProvider({ children }) {
                 setSavedRoutes,  // Added this line to expose setSavedRoutes
                 addSavedRoute,
                 fetchedRoutes,
-                setFetchedRoutes
+                setFetchedRoutes,
+                visualizingRoute,
+                setVisualizingRoute
             }}
         >
             {children}

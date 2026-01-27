@@ -12,6 +12,7 @@ from django.utils.decorators import method_decorator
 
 from django.conf import settings
 from django.db import connection
+from django.utils import timezone
 
 from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
 from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
@@ -280,13 +281,18 @@ class RouteView(APIView):
             # Convert cities list to JSON string for SQL
             cities_json = json.dumps(cities)
             
+            # Get current timestamp for created_at
+            now = timezone.now()
+            
             with connection.cursor() as cursor:
-                # Execute SQL INSERT query with RETURNING clause, including user_id
+                # Execute SQL INSERT query with RETURNING clause, including all required fields
                 cursor.execute("""
-                    INSERT INTO routes_route (start_location, end_location, polyline, cities, user_id) 
-                    VALUES (%s, %s, %s, %s, %s) 
+                    INSERT INTO routes_route 
+                    (start_location, end_location, polyline, cities, user_id, name, distance, duration, created_at) 
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) 
                     RETURNING route_id, start_location, end_location, polyline, cities
-                """, [start_location, end_location, polyline, cities_json, user.id])
+                """, [start_location, end_location, polyline, cities_json, user.id, 
+                       'Unnamed Route', 0.0, 0.0, now])
                 
                 # Fetch the inserted row
                 row = cursor.fetchone()
