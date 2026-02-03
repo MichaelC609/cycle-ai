@@ -9,3 +9,13 @@ body {
 a {
   text-decoration: none;
 }
+
+/* Global header styling - white */
+h1, h2, h3, h4, h5, h6 {
+  color: white;
+}
+
+/* Global text content - yellow */
+p, span, div, a, li, td, th {
+  color: yellow;
+}

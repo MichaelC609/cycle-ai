@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from "react";
 import SaveRoute from "./SaveRoute";
+import './RouteInfo/RouteInfo.css';
 
-export default function RouteWeatherDisplay({ cityName }) {
+export default function RouteWeatherDisplay({ cityName, onCityNotFound }) {
   const [weatherData, setWeatherData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -30,6 +31,18 @@ export default function RouteWeatherDisplay({ cityName }) {
         if (!response.ok) {
           const errorData = await response.json();
           console.error("API Error:", errorData);
+          
+          // Check for city not found error
+          if (response.status === 404 || errorData.cod === "404") {
+            console.warn(`City not found: ${cityName}`);
+            if (onCityNotFound) {
+              onCityNotFound(cityName);
+            }
+            setError(`City not found: ${cityName}`);
+            setLoading(false);
+            return;
+          }
+          
           throw new Error(`Weather API error: ${errorData.message || response.statusText}`);
         }
 
@@ -50,11 +63,12 @@ export default function RouteWeatherDisplay({ cityName }) {
   }, [cityName]);
 
   if (loading) return <p>Loading weather data...</p>;
+  if (error && error.includes("City not found")) return null;
   if (error) return <p>Error: {error}</p>;
   if (!weatherData) return null;
 
   return (
-    <div className="bg-blue-50 p-4 rounded-md">
+    <div className="city-weather-info">
       <h3 className="font-semibold text-lg mb-2">Weather in {weatherData.name}</h3>
       <p>Temperature: {weatherData.main.temp.toFixed(1)}°C</p>
       <p>Feels like: {weatherData.main.feels_like.toFixed(1)}°C</p>

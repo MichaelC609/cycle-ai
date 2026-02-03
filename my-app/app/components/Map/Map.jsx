@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useMemo } from "react";
-import { GoogleMap, Polyline } from "@react-google-maps/api";
+import { GoogleMap, Polyline, Marker } from "@react-google-maps/api";
 import { decode } from "@googlemaps/polyline-codec";
 import RouteWeatherDisplay from "../RouteWeatherDisplay";
 import { useRoutes } from "../../context/RouteContext";
@@ -30,6 +30,7 @@ export default function Map({ visualizingMode = false }) {
   const { setCurrentRoute, setFetchedRoutes, visualizingRoute } = useRoutes();
   const [apiRoutes, setApiRoutes] = useState([]); //Store raw API response
   const [mapCenter, setMapCenter] = useState(defaultCenter);
+  const [failedCities, setFailedCities] = useState([]); // Track cities that failed weather lookup
 
   //state for route preferences and filtering
   const [preferences, setPreferences] = useState({
@@ -84,6 +85,11 @@ export default function Map({ visualizingMode = false }) {
       }
     }
   }, [decodedPolyline, visualizingMode]);
+
+  // Handle city not found errors
+  const handleCityNotFound = (cityName) => {
+    setFailedCities(prev => [...prev, cityName]);
+  };
 
 //NEW PLACES API — Convert text → {latitude, longitude}
   async function geocodePlaceText(query) {
@@ -364,6 +370,66 @@ export default function Map({ visualizingMode = false }) {
           />
         )}
         
+        {/* Draw start and end markers in visualizing mode */}
+        {visualizingMode && decodedPolyline.length > 0 && (
+          <>
+            <Marker
+              position={decodedPolyline[0]}
+              title={visualizingRoute?.start_location || "Start"}
+              icon={{
+                path: "M-20,0a20,20 0 1,0 40,0a20,20 0 1,0 -40,0",
+                fillColor: "#4CAF50",
+                fillOpacity: 1,
+                strokeColor: "#ffffff",
+                strokeWeight: 2,
+                scale: 0.5,
+              }}
+            />
+            <Marker
+              position={decodedPolyline[decodedPolyline.length - 1]}
+              title={visualizingRoute?.end_location || "End"}
+              icon={{
+                path: "M-20,0a20,20 0 1,0 40,0a20,20 0 1,0 -40,0",
+                fillColor: "#FF6B6B",
+                fillOpacity: 1,
+                strokeColor: "#ffffff",
+                strokeWeight: 2,
+                scale: 0.5,
+              }}
+            />
+          </>
+        )}
+        
+        {/* Draw start and end markers in planning mode */}
+        {!visualizingMode && routes.length > 0 && routes[selectedRoute] && (
+          <>
+            <Marker
+              position={routes[selectedRoute][0]}
+              title="Start Location"
+              icon={{
+                path: "M-20,0a20,20 0 1,0 40,0a20,20 0 1,0 -40,0",
+                fillColor: "#4CAF50",
+                fillOpacity: 1,
+                strokeColor: "#ffffff",
+                strokeWeight: 2,
+                scale: 0.5,
+              }}
+            />
+            <Marker
+              position={routes[selectedRoute][routes[selectedRoute].length - 1]}
+              title="End Location"
+              icon={{
+                path: "M-20,0a20,20 0 1,0 40,0a20,20 0 1,0 -40,0",
+                fillColor: "#FF6B6B",
+                fillOpacity: 1,
+                strokeColor: "#ffffff",
+                strokeWeight: 2,
+                scale: 0.5,
+              }}
+            />
+          </>
+        )}
+        
         {/* Draw all route alternatives in planning mode */}
         {!visualizingMode && routes.map((path, index) => (
           <Polyline
@@ -417,12 +483,16 @@ export default function Map({ visualizingMode = false }) {
         {((visualizingMode && visualizingRoute?.cities?.length > 0) || (!visualizingMode && cities.length > 0)) && (
           <div className="bg-white p-4 rounded-md shadow-sm">
             <h3 className="font-semibold text-lg mb-3">Cities Along Route</h3>
-            <div className="space-y-4">
-              {(visualizingMode ? visualizingRoute.cities : cities).map((city, index) => (
-                <div key={index} className="border-b pb-4 last:border-b-0">
-                  <h4 className="font-medium mb-2">{city}</h4>
-                  <RouteWeatherDisplay cityName={city} />
-                </div>
+            <div className="city-weather-grid">
+              {(visualizingMode ? (visualizingRoute?.cities || []) : cities)
+                .filter(city => !failedCities.includes(city))
+                .map((city, index) => (
+                  <div key={index}>
+                    <RouteWeatherDisplay 
+                      cityName={city} 
+                      onCityNotFound={handleCityNotFound}
+                    />
+                  </div>
               ))}
             </div>
             <div className="mt-3 text-sm text-gray-600">

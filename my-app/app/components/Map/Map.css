@@ -7,31 +7,35 @@ input{
     flex-direction: column;
     font-size: 1.2rem;
     overflow-wrap: normal;
-    color: white;
+    color: yellow;
 }
 
 h1 {
-    color: yellow;
+    color: white;
 }
 
 h2{
-    color: yellow;
+    color: white;
 }
 
 h3 {
-    color: yellow;
+    color: white;
 }
 
 h4 {
-    color: yellow;
+    color: white;
 }
 
 p {
-    color: white;
+    color: yellow;
 }
 
 span {
-    color: white;
+    color: yellow;
+}
+
+div {
+    color: yellow;
 }
 
 button{
